@@ -25,19 +25,18 @@ Modes:
 - diff-commit
 - diff-branch-remote-repo
 
-ceph-config-diff --mode diff-branch --ref-repo <repo-url> main squid 
-ceph-config-diff --mode diff-commit --ref-repo <repo-url> --ref-branch main sha1 sha2
-ceph-config-diff --mode diff-branch-remote-repo --ref-repo <repo-url> --remote-repo <remote-url> --ref-branch <branch> --remote-branch <branch>
-
-
 --ref-repo = Option, default value is ceph upstream linkModes:
-- diff-branch
-- diff-commit
-- diff-branch-remote-repo
+- diff-branch (Compares the difference between the first commits of the branches)
+- diff-tags (Compare tags on the repo)
+- diff-branch-remote-repo (Compares your branch on remote repo with ceph upstream repo)
 
-ceph-config-diff --mode diff-branch --ref-repo <repo-url> --ref-branch main --cmp-branch squid 
-ceph-config-diff --mode diff-commit --ref-repo <repo-url> --ref-branch main --ref-sha sha1 --cmp-sha sha2
+ceph-config-diff --mode diff-branch --ref-repo <repo-url> --ref-branch squid --cmp-branch main 
+ceph-config-diff --mode diff-tags --ref-repo <repo-url> --ref-branch main --ref-tag tag1 --cmp-tag tag2
 ceph-config-diff --mode diff-branch-remote-repo --ref-repo <repo-url> --remote-repo <remote-url> --ref-branch <branch> --cmp-branch <branch>
+
+Examples:
+python3 main.py diff-branch --ref-branch squid --cmp-branch main
+python3 main.py diff-tag --ref-tag v19.1.1 --cmp-tag v19.2.0
 
 
 --ref-repo = Option, default value is ceph upstream link
@@ -51,17 +50,17 @@ CEPH_CONFIG_OPTIONS_FOLDER_PATH = "src/common/options"
 REF_CLONE_FOLDER = "ref-config"
 CMP_CLONE_FOLDER = "cmp-config"
 
-"""
-git clone --filter=blob:none --no-checkout --depth 1 --single-branch --branch <branch_name> --sparse <repo_url> <folder_name>
-cd ceph
-git sparse-checkout add src/common/options
-git checkout
-"""
 
-
+# TODO: Naveen: Proper error handling when wrong branch/tag name is given
 def sparse_branch_checkout(
     repo_url: str, branch_name: str, clone_folder_name: str, config_options_path: str
 ):
+    """
+    git clone --filter=blob:none --no-checkout --depth 1 --single-branch --branch <branch_name> --sparse <repo_url> <folder_name>
+    cd ceph
+    git sparse-checkout add src/common/options
+    git checkout
+    """
     commands = [
         f"rm -rf {clone_folder_name}",
         f"git clone --filter=blob:none --no-checkout --depth 1 --single-branch --branch {branch_name} --sparse {repo_url} {clone_folder_name}",
@@ -188,25 +187,17 @@ def get_shared_config_daemon(shared_config_names, ref_daemon_configs, cmp_daemon
 
         for config_key in new_config_keys:
             modified_config[config_name][config_key]["before"] = ""
-            modified_config[config_name][config_key]["after"] = cmp_daemon_config[
-                config_key
-            ]
+            modified_config[config_name][config_key]["after"] = cmp_daemon_config[config_key]
 
         for config_key in deleted_config_keys:
-            modified_config[config_name][config_key]["before"] = ref_daemon_config[
-                config_key
-            ]
+            modified_config[config_name][config_key]["before"] = ref_daemon_config[config_key]
             modified_config[config_name][config_key]["after"] = ""
 
         shared_config_keys = ref_daemon_config_keys.intersection(cmp_daemon_config_keys)
         for config_key in shared_config_keys:
             if ref_daemon_config[config_key] != cmp_daemon_config[config_key]:
-                modified_config[config_name][config_key]["before"] = ref_daemon_config[
-                    config_key
-                ]
-                modified_config[config_name][config_key]["after"] = cmp_daemon_config[
-                    config_key
-                ]
+                modified_config[config_name][config_key]["before"] = ref_daemon_config[config_key]
+                modified_config[config_name][config_key]["after"] = cmp_daemon_config[config_key]
 
     return modified_config
 
@@ -285,6 +276,15 @@ def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str):
         json.dump(final_result, output_file, indent=4)
 
 
+def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str):
+    sparse_branch_checkout(ref_repo, ref_tag, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
+    sparse_branch_checkout(ref_repo, cmp_tag, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
+
+    final_result = diff_config()
+    with open("diff_result.json", "w") as output_file:
+        json.dump(final_result, output_file, indent=4)
+
+
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers(
@@ -301,21 +301,20 @@ def main():
     )
     parser_diff_branch.add_argument("--ref-branch", required=True, help="the reference branch")
     parser_diff_branch.add_argument(
-        "--cmp-branch", required=True, help="the branch to compare against"
+        "--cmp-branch", required=True, help="the branch to compare against reference"
     )
 
-    # diff-commit mode
-    parser_diff_commit = subparsers.add_parser("diff-commit", help="diff between commits")
+    # diff-tag mode
+    parser_diff_commit = subparsers.add_parser("diff-tag", help="diff between tags")
     parser_diff_commit.add_argument(
         "--ref-repo",
         nargs="?",
         default=CEPH_UPSTREAM_REMOTE_URL,
         help="the repository URL from where the reference config files will be fetched",
     )
-    parser_diff_commit.add_argument("--ref-branch", required=True, help="the reference branch")
-    parser_diff_commit.add_argument("--ref-sha", required=True, help="the reference commit SHA")
+    parser_diff_commit.add_argument("--ref-tag", required=True, help="the reference tag version")
     parser_diff_commit.add_argument(
-        "--cmp-sha", required=True, help="the commit SHA to compare against"
+        "--cmp-tag", required=True, help="the tag version to compare against reference"
     )
 
     # diff-branch-remote-repo mode
@@ -346,11 +345,11 @@ def main():
         )
         diff_branch(args.ref_repo, args.ref_branch, args.cmp_branch)
 
-    elif args.mode == "diff-commit":
+    elif args.mode == "diff-tag":
         print(
-            f"Running diff-commit with ref-repo: {args.ref_repo}, ref-branch: {args.ref_branch}, ref-sha: {args.ref_sha}, cmp-sha: {args.cmp_sha}"
+            f"Running diff-tag with ref-repo: {args.ref_repo}, ref-tag: {args.ref_tag}, cmp-tag: {args.cmp_tag}"
         )
-        # Add your logic for diff-commit mode here
+        diff_tags(args.ref_repo, args.ref_tag, args.cmp_tag)
 
     elif args.mode == "diff-branch-remote-repo":
         print(
