@@ -4,7 +4,6 @@ import yaml
 import argparse
 import subprocess
 import glob
-import math
 import os
 import sys
 import json
@@ -143,7 +142,7 @@ def get_daemons_config_names(daemons, daemon_configs):
 
 
 # Get the configuration options that has been modified, Returns a diction in the format:
-def get_shared_config_daemon(daemon, shared_config_names, ref_daemon_configs, cmp_daemon_configs):
+def get_shared_config_daemon(shared_config_names, ref_daemon_configs, cmp_daemon_configs):
     """
     Returns a diction in the format:
 
@@ -193,28 +192,27 @@ def get_shared_config_daemon(daemon, shared_config_names, ref_daemon_configs, cm
         # print("new_config_keys: ", new_config_keys)
 
         for config_key in new_config_keys:
-            modified_config[daemon][config_name][config_key]["before"] = ""
-            modified_config[daemon][config_name][config_key]["after"] = cmp_daemon_config[
+            modified_config[config_name][config_key]["before"] = ""
+            modified_config[config_name][config_key]["after"] = cmp_daemon_config[
                 config_key
             ]
 
         for config_key in deleted_config_keys:
-            modified_config[daemon][config_name][config_key]["before"] = ref_daemon_config[
+            modified_config[config_name][config_key]["before"] = ref_daemon_config[
                 config_key
             ]
-            modified_config[daemon][config_name][config_key]["after"] = ""
+            modified_config[config_name][config_key]["after"] = ""
 
         shared_config_keys = ref_daemon_config_keys.intersection(cmp_daemon_config_keys)
         for config_key in shared_config_keys:
             if ref_daemon_config[config_key] != cmp_daemon_config[config_key]:
-                modified_config[daemon][config_name][config_key]["before"] = ref_daemon_config[
+                modified_config[config_name][config_key]["before"] = ref_daemon_config[
                     config_key
                 ]
-                modified_config[daemon][config_name][config_key]["after"] = cmp_daemon_config[
+                modified_config[config_name][config_key]["after"] = cmp_daemon_config[
                     config_key
                 ]
-    # do not include daemons where no config options have been modified
-    # modified_config = {key: value for key, value in modified_config.items() if len(value) != 0}
+
     return modified_config
 
 
@@ -264,13 +262,14 @@ def diff_config():
 
         # get modified configs
         shared_config_names = ref_daemon_config_names.intersection(cmp_daemon_config_names)
-        modified_config = get_shared_config_daemon(
-            daemon, shared_config_names, ref_daemon_configs, cmp_daemon_configs
+        modified_config[daemon] = get_shared_config_daemon(
+            shared_config_names, ref_daemon_configs, cmp_daemon_configs
         )
 
-    # Do not include daemons whose configurations have not changed
+    # do not include daemons whose configurations have not changed
     new_config = {key: value for key, value in new_config.items() if len(value) != 0}
     deleted_config = {key: value for key, value in deleted_config.items() if len(value) != 0}
+    modified_config = {key: value for key, value in modified_config.items() if len(value) != 0}
 
     final_result = defaultdict()
     final_result["added"] = new_config
