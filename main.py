@@ -185,12 +185,6 @@ def get_shared_config_daemon(shared_config_names, ref_daemon_configs, cmp_daemon
         # Get the config option key that was deleted
         new_config_keys = cmp_daemon_config_keys.difference(ref_daemon_config_keys)
 
-        # print("cmp_daemon_config: ", cmp_daemon_config)
-        # print("ref_daemon_config: ", ref_daemon_config)
-
-        # print("deleted_config_keys: ", deleted_config_keys)
-        # print("new_config_keys: ", new_config_keys)
-
         for config_key in new_config_keys:
             modified_config[config_name][config_key]["before"] = ""
             modified_config[config_name][config_key]["after"] = cmp_daemon_config[
@@ -221,11 +215,13 @@ def diff_config():
     deleted_config = defaultdict(list)
     modified_config = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
+    # Get the configurations options present for all daemons in the "reference" version
     ref_config_dict = load_config_yaml_files(
         f"{REF_CLONE_FOLDER}/{CEPH_CONFIG_OPTIONS_FOLDER_PATH}"
     )
     ref_file_names = set(ref_config_dict.keys())
 
+    # Get the configurations options present for all daemons in the "comparing" version
     config_dict = load_config_yaml_files(f"{CMP_CLONE_FOLDER}/{CEPH_CONFIG_OPTIONS_FOLDER_PATH}")
     cmp_file_names = set(config_dict.keys())
 
@@ -236,7 +232,7 @@ def diff_config():
     deleted_config = get_daemons_config_names(deleted_daemons, ref_config_dict)
 
     # Case 2: A daemon is not present in "refrence" version but is
-    # added/introduced to the "comparing" version
+    # added/introduced in the "comparing" version
     # (A,B,C) cmp - (A,B) ref  = C (deleted daemon)
     new_daemons = cmp_file_names.difference(ref_file_names)
     new_config = get_daemons_config_names(new_daemons, config_dict)
@@ -282,7 +278,6 @@ def diff_config():
 def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str):
     sparse_branch_checkout(ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
     sparse_branch_checkout(ref_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
-
     diff_config()
 
 
