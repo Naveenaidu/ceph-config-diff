@@ -46,7 +46,7 @@ ceph-config-diff --mode diff-branch-remote-repo --ref-repo <repo-url> --remote-r
 python3 main.py diff-branch --ref-branch main --cmp-branch reef
 """
 
-
+# TODO: Naveen: Fetch these values from a config file
 CEPH_UPSTREAM_REMOTE_URL = "https://github.com/ceph/ceph.git"
 CEPH_CONFIG_OPTIONS_FOLDER_PATH = "src/common/options"
 REF_CLONE_FOLDER = "ref-config"
@@ -104,7 +104,7 @@ def sparse_branch_checkout(
 
 def load_config_yaml_files(path: str):
     files = glob.glob(f"{path}/*.yaml.in")
-    config_options = defaultdict()
+    config_options = {}
 
     for file in files:
         with open(file, "r") as stream:
@@ -176,8 +176,6 @@ def get_shared_config_daemon(daemon, shared_config_names, ref_daemon_configs, cm
             None,
         )
 
-        
-
         # Get all the keys of a config option (eg: type, level, desc etc)
         ref_daemon_config_keys = set(ref_daemon_config.keys())
         cmp_daemon_config_keys = set(cmp_daemon_config.keys())
@@ -190,7 +188,7 @@ def get_shared_config_daemon(daemon, shared_config_names, ref_daemon_configs, cm
 
         # print("cmp_daemon_config: ", cmp_daemon_config)
         # print("ref_daemon_config: ", ref_daemon_config)
-        
+
         # print("deleted_config_keys: ", deleted_config_keys)
         # print("new_config_keys: ", new_config_keys)
 
@@ -233,17 +231,20 @@ def diff_config():
     config_dict = load_config_yaml_files(f"{CMP_CLONE_FOLDER}/{CEPH_CONFIG_OPTIONS_FOLDER_PATH}")
     cmp_file_names = set(config_dict.keys())
 
-    # Case 1: A deamon is present in "reference" version but has been deleted from "comparing" version
+    # Case 1: A deamon is present in "reference" version but has been deleted
+    # from "comparing" version
     # (A,B,C) ref - (A,B) cmp == C (new daemon)
     deleted_daemons = (ref_file_names).difference(cmp_file_names)
     deleted_config = get_daemons_config_names(deleted_daemons, ref_config_dict)
 
-    # Case 2: A daemon is not present in "refrence" version but is added/introduced to the "comparing" version
+    # Case 2: A daemon is not present in "refrence" version but is
+    # added/introduced to the "comparing" version
     # (A,B,C) cmp - (A,B) ref  = C (deleted daemon)
     new_daemons = cmp_file_names.difference(ref_file_names)
     new_config = get_daemons_config_names(new_daemons, config_dict)
 
-    # Case 3: Compare the config options between the common daemons of "reference" version of "comparing" version
+    # Case 3: Compare the config options between the common daemons of
+    # "reference" version and "comparing" version
     file_names = ref_file_names.intersection(cmp_file_names)
     for daemon in file_names:
         ref_daemon_configs = ref_config_dict[daemon]["options"]
@@ -255,24 +256,21 @@ def diff_config():
             map(lambda config_value: config_value["name"], cmp_daemon_configs)
         )
 
-        # print("DAEMON: ", daemon)
-        # print("ref_daemon_config_names (MAIN): ", ref_daemon_config_names)
-        # print("cmp_daemon_config_names (SQUID): ", cmp_daemon_config_names)
-
         added = cmp_daemon_config_names.difference(ref_daemon_config_names)
         removed = ref_daemon_config_names.difference(cmp_daemon_config_names)
 
         new_config[daemon] = list(added)
-        # new_config = {key: value for key, value in new_config.items() if len(value) != 0}
-
         deleted_config[daemon] = list(removed)
-        # deleted_config = {key: value for key, value in deleted_config.items() if len(value) != 0}
 
         # get modified configs
         shared_config_names = ref_daemon_config_names.intersection(cmp_daemon_config_names)
         modified_config = get_shared_config_daemon(
             daemon, shared_config_names, ref_daemon_configs, cmp_daemon_configs
         )
+
+    # Do not include daemons whose configurations have not changed
+    new_config = {key: value for key, value in new_config.items() if len(value) != 0}
+    deleted_config = {key: value for key, value in deleted_config.items() if len(value) != 0}
 
     final_result = defaultdict()
     final_result["added"] = new_config
@@ -290,8 +288,6 @@ def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str):
 
 
 def main():
-    ceph_upstream_repo_url = "https://github.com/ceph/ceph.git"
-
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers(
         dest="mode", help="the mode in which diff should be performed"

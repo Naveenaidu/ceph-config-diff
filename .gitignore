@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Ignore folders that we clone for diff'ing
+ref-config/
+cmp-config/
+out*.txt
