@@ -85,6 +85,7 @@ def sparse_branch_checkout(
             sys.exit(result.returncode)
 
     # Run the sparse checkout in cloned directory
+    # This is necessary, because we need to use "cwd" to cd into cloned repository
     for command in commands[2:]:
         print(command)
         result = subprocess.run(
@@ -272,13 +273,16 @@ def diff_config():
     final_result["deleted"] = deleted_config
     final_result["modified"] = modified_config
 
-    print(json.dumps(final_result))
+    return final_result
 
 
 def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str):
     sparse_branch_checkout(ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
     sparse_branch_checkout(ref_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
-    diff_config()
+
+    final_result = diff_config()
+    with open("diff_result.json", "w") as output_file:
+        json.dump(final_result, output_file, indent=4)
 
 
 def main():
