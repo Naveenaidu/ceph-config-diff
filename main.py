@@ -35,8 +35,8 @@ ceph-config-diff --mode diff-tags --ref-repo <repo-url> --ref-branch main --ref-
 ceph-config-diff --mode diff-branch-remote-repo --ref-repo <repo-url> --remote-repo <remote-url> --ref-branch <branch> --cmp-branch <branch>
 
 Examples:
-python3 main.py diff-branch --ref-branch squid --cmp-branch main
-python3 main.py diff-tag --ref-tag v19.1.1 --cmp-tag v19.2.0
+python3 main.py diff-branch --ref-branch squid --cmp-branch main (Compares how main has changed since squid)
+python3 main.py diff-tag --ref-tag v19.1.1 --cmp-tag v19.2.0 (compares how the tag v19.2.0 changed since v19.1.1)
 
 
 --ref-repo = Option, default value is ceph upstream link
@@ -93,6 +93,30 @@ def sparse_branch_checkout(
             check=True,
             text=True,
             cwd=clone_folder_name,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+        )
+        if result.returncode != 0:
+            print(f"Command failed: {command}")
+            sys.exit(result.returncode)
+
+
+def cleanup_files():
+    """
+    rm -rf cmp-config
+    rm -rf ref-config
+    """
+    commands = [
+        f"rm -rf {REF_CLONE_FOLDER} {CMP_CLONE_FOLDER}"
+    ]
+
+    for command in commands:
+        print(command)
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=True,
+            text=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
         )
@@ -275,6 +299,8 @@ def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str):
     with open("diff_result.json", "w") as output_file:
         json.dump(final_result, output_file, indent=4)
 
+    cleanup_files()
+
 
 def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str):
     sparse_branch_checkout(ref_repo, ref_tag, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
@@ -283,6 +309,8 @@ def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str):
     final_result = diff_config()
     with open("diff_result.json", "w") as output_file:
         json.dump(final_result, output_file, indent=4)
+
+    cleanup_files()
 
 
 def main():
