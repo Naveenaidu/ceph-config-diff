@@ -318,8 +318,9 @@ def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cm
     sparse_branch_checkout(remote_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
 
     final_result = diff_config()
-    with open("diff_result.json", "w") as output_file:
-        json.dump(final_result, output_file, indent=4)
+    print(final_result)
+    # with open("diff_result.json", "w") as output_file:
+    #     json.dump(final_result, output_file, indent=4)
 
     cleanup_files()
 
