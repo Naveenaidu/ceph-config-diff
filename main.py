@@ -313,6 +313,17 @@ def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str):
     cleanup_files()
 
 
+def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str):
+    sparse_branch_checkout(ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
+    sparse_branch_checkout(remote_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
+
+    final_result = diff_config()
+    with open("diff_result.json", "w") as output_file:
+        json.dump(final_result, output_file, indent=4)
+
+    cleanup_files()
+
+
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers(
@@ -383,7 +394,7 @@ def main():
         print(
             f"Running diff-branch-remote-repo with ref-repo: {args.ref_repo}, remote-repo: {args.remote_repo}, ref-branch: {args.ref_branch}, cmp-branch: {args.cmp_branch}"
         )
-        # Add your logic for diff-branch-remote-repo mode here
+        diff_branch_remote_repo(args.ref_repo, args.ref_branch, args.remote_repo, args.cmp_branch)
 
     else:
         parser.print_help()
