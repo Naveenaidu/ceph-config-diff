@@ -53,7 +53,7 @@ CMP_CLONE_FOLDER = "cmp-config"
 
 # TODO: Naveen: Proper error handling when wrong branch/tag name is given
 def sparse_branch_checkout(
-    repo_url: str, branch_name: str, clone_folder_name: str, config_options_path: str
+    repo_url: str, branch_name: str, clone_folder_name: str, config_options_path: str, verbose: bool
 ):
     """
     git clone --filter=blob:none --no-checkout --depth 1 --single-branch --branch <branch_name> --sparse <repo_url> <folder_name>
@@ -70,7 +70,8 @@ def sparse_branch_checkout(
 
     # Run the first 2 commands in current directory
     for command in commands[0:2]:
-        print(command)
+        if verbose:
+            print(command)
         result = subprocess.run(
             command,
             shell=True,
@@ -86,7 +87,8 @@ def sparse_branch_checkout(
     # Run the sparse checkout in cloned directory
     # This is necessary, because we need to use "cwd" to cd into cloned repository
     for command in commands[2:]:
-        print(command)
+        if verbose:
+            print(command)
         result = subprocess.run(
             command,
             shell=True,
@@ -101,7 +103,7 @@ def sparse_branch_checkout(
             sys.exit(result.returncode)
 
 
-def cleanup_files():
+def cleanup_files(verbose: bool):
     """
     rm -rf cmp-config
     rm -rf ref-config
@@ -111,7 +113,8 @@ def cleanup_files():
     ]
 
     for command in commands:
-        print(command)
+        if verbose:
+            print(command)
         result = subprocess.run(
             command,
             shell=True,
@@ -291,38 +294,50 @@ def diff_config():
     return final_result
 
 
-def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str):
-    sparse_branch_checkout(ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
-    sparse_branch_checkout(ref_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
+def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str, is_verbose: bool):
+    if is_verbose:
+        print(
+            f"Running diff-branch with ref-repo: {ref_repo}, ref-branch: {ref_branch}, cmp-branch: {cmp_branch}"
+        )
+    sparse_branch_checkout(ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
+    sparse_branch_checkout(ref_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
 
     final_result = diff_config()
     with open("diff_result.json", "w") as output_file:
         json.dump(final_result, output_file, indent=4)
 
-    cleanup_files()
+    cleanup_files(verbose=is_verbose)
 
 
-def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str):
-    sparse_branch_checkout(ref_repo, ref_tag, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
-    sparse_branch_checkout(ref_repo, cmp_tag, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
+def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str, is_verbose: bool):
+    if is_verbose:
+        print(
+            f"Running diff-tag with ref-repo: {ref_repo}, ref-tag: {ref_tag}, cmp-tag: {cmp_tag}"
+        )
+    sparse_branch_checkout(ref_repo, ref_tag, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
+    sparse_branch_checkout(ref_repo, cmp_tag, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
 
     final_result = diff_config()
     with open("diff_result.json", "w") as output_file:
         json.dump(final_result, output_file, indent=4)
 
-    cleanup_files()
+    cleanup_files(verbose=is_verbose)
 
 
-def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str):
-    sparse_branch_checkout(ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
-    sparse_branch_checkout(remote_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH)
+def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str, is_verbose: bool):
+    if is_verbose:
+        print(
+                f"Running diff-branch-remote-repo with ref-repo: {ref_repo}, remote-repo: {remote_repo}, ref-branch: {ref_branch}, cmp-branch: {cmp_branch}"
+        )
+    sparse_branch_checkout(ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
+    sparse_branch_checkout(remote_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
 
     final_result = diff_config()
-    print(final_result)
+    print(json.dumps(final_result))
     # with open("diff_result.json", "w") as output_file:
     #     json.dump(final_result, output_file, indent=4)
 
-    cleanup_files()
+    cleanup_files(verbose=is_verbose)
 
 
 def main():
@@ -343,6 +358,11 @@ def main():
     parser_diff_branch.add_argument(
         "--cmp-branch", required=True, help="the branch to compare against reference"
     )
+    parser_diff_branch.add_argument(
+        "--verbose",
+        action='store_true',
+        help="enable verbose mode, prints all commands being run",
+    )
 
     # diff-tag mode
     parser_diff_commit = subparsers.add_parser("diff-tag", help="diff between tags")
@@ -355,6 +375,11 @@ def main():
     parser_diff_commit.add_argument("--ref-tag", required=True, help="the reference tag version")
     parser_diff_commit.add_argument(
         "--cmp-tag", required=True, help="the tag version to compare against reference"
+    )
+    parser_diff_commit.add_argument(
+        "--verbose",
+        action='store_true',
+        help="enable verbose mode, prints all commands being run",
     )
 
     # diff-branch-remote-repo mode
@@ -376,26 +401,22 @@ def main():
     parser_diff_branch_remote_repo.add_argument(
         "--cmp-branch", required=True, help="the branch to compare against"
     )
+    parser_diff_branch_remote_repo.add_argument(
+        "--verbose",
+        action='store_true',
+        help="enable verbose mode, prints all commands being run",
+    )
 
     args = parser.parse_args()
 
     if args.mode == "diff-branch":
-        print(
-            f"Running diff-branch with ref-repo: {args.ref_repo}, ref-branch: {args.ref_branch}, cmp-branch: {args.cmp_branch}"
-        )
-        diff_branch(args.ref_repo, args.ref_branch, args.cmp_branch)
+        diff_branch(args.ref_repo, args.ref_branch, args.cmp_branch, args.verbose)
 
     elif args.mode == "diff-tag":
-        print(
-            f"Running diff-tag with ref-repo: {args.ref_repo}, ref-tag: {args.ref_tag}, cmp-tag: {args.cmp_tag}"
-        )
-        diff_tags(args.ref_repo, args.ref_tag, args.cmp_tag)
+        diff_tags(args.ref_repo, args.ref_tag, args.cmp_tag, args.verbose)
 
     elif args.mode == "diff-branch-remote-repo":
-        print(
-            f"Running diff-branch-remote-repo with ref-repo: {args.ref_repo}, remote-repo: {args.remote_repo}, ref-branch: {args.ref_branch}, cmp-branch: {args.cmp_branch}"
-        )
-        diff_branch_remote_repo(args.ref_repo, args.ref_branch, args.remote_repo, args.cmp_branch)
+        diff_branch_remote_repo(args.ref_repo, args.ref_branch, args.remote_repo, args.cmp_branch, args.verbose)
 
     else:
         parser.print_help()
