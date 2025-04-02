@@ -21,4 +21,13 @@ jobs:
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+      - name: Install python packages
+        run: |
+          pip3 install -r requirements.txt
+      - name: execute cofig diff tool
+        run: python3 main.py diff-tag --ref-tag v19.2.1 --cmp-tag v19.3.0
+
       - run: echo "🍏 This job's status is ${{ job.status }}."
