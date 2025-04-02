@@ -1,7 +1,8 @@
 name: GitHub Actions Demo
 run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
 on:
-  pull_request:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
     branches:
       - main
 jobs:
@@ -29,7 +30,7 @@ jobs:
       - name: Install python packages
         run: |
           pip3 install -r requirements.txt
-      - name: execute cofig diff tool
+      - name: execute config diff tool
         id: diff_tool
         run:  python3 main.py diff-branch-remote-repo --ref-repo https://github.com/ceph/ceph.git --ref-branch main --remote-repo https://github.com/Naveenaidu/ceph --cmp-branch wip-naveen-test-config-diff-script
       
