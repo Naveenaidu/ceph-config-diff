@@ -8,6 +8,10 @@ jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
     steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - run: echo "🐧 Reference(Base) Branch, Name is ${{ github.event.pull_request.base.ref }}, URL is {{ github.event.pull_request.base.repo.git_url }}"
       - run: echo "🐧 Compare(Base) Branch, Name is ${{ github.event.pull_request.head.ref }}, URL is {{ github.event.pull_request.head.repo.git_url }}"
