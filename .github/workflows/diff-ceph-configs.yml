@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize, reopened]
     branches:
       - main
+      
+permissions:
+      pull-requests: write
+
 jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
