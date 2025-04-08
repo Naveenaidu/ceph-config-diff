@@ -11,39 +11,6 @@ import re
 
 from collections import defaultdict
 
-
-"""
-Things to do:
-    - Sparse checkout the files
-    - Store all the files in dictionaries, format of this TBD
-    - Compare these dicts and generate the report
-"""
-
-"""
-Modes:
-- diff-branch
-- diff-commit
-- diff-branch-remote-repo
-
---ref-repo = Option, default value is ceph upstream linkModes:
-- diff-branch (Compares the difference between the first commits of the branches)
-- diff-tags (Compare tags on the repo)
-- diff-branch-remote-repo (Compares your branch on remote repo with ceph upstream repo)
-
-ceph-config-diff --mode diff-branch --ref-repo <repo-url> --ref-branch squid --cmp-branch main 
-ceph-config-diff --mode diff-tags --ref-repo <repo-url> --ref-branch main --ref-tag tag1 --cmp-tag tag2
-ceph-config-diff --mode diff-branch-remote-repo --ref-repo <repo-url> --remote-repo <remote-url> --ref-branch <branch> --cmp-branch <branch>
-
-Examples:
-python3 main.py diff-branch --ref-branch squid --cmp-branch main (Compares how main has changed since squid)
-python3 main.py diff-tag --ref-tag v19.1.1 --cmp-tag v19.2.0 (compares how the tag v19.2.0 changed since v19.1.1)
-
-
---ref-repo = Option, default value is ceph upstream link
-
-python3 main.py diff-branch --ref-branch main --cmp-branch reef
-"""
-
 # TODO: Naveen: Fetch these values from a config file
 CEPH_UPSTREAM_REMOTE_URL = "https://github.com/ceph/ceph.git"
 CEPH_CONFIG_OPTIONS_FOLDER_PATH = "src/common/options"
