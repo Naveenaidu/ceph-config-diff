@@ -1,4 +1,4 @@
 # ceph-config-diff
 tool to compare ceph configurations between different versions
 
-test 26
+test 27
