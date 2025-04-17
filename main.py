@@ -11,23 +11,34 @@ import re
 
 from collections import defaultdict
 
-# TODO: Naveen: Fetch these values from a config file
+# Constants for Ceph repository and folder paths
 CEPH_UPSTREAM_REMOTE_URL = "https://github.com/ceph/ceph.git"
 CEPH_CONFIG_OPTIONS_FOLDER_PATH = "src/common/options"
 REF_CLONE_FOLDER = "ref-config"
 CMP_CLONE_FOLDER = "cmp-config"
 
 
-# TODO: Naveen: Proper error handling when wrong branch/tag name is given
 def sparse_branch_checkout(
     repo_url: str, branch_name: str, clone_folder_name: str, config_options_path: str, verbose: bool
 ):
     """
-    git clone --filter=blob:none --no-checkout --depth 1 --single-branch --branch <branch_name> --sparse <repo_url> <folder_name>
-    cd ceph
-    git sparse-checkout add src/common/options
-    git checkout
+    Clone a sparse branch and checkout the required folder.
+
+    Args:
+        repo_url (str): The repository URL to clone.
+        branch_name (str): The branch name to checkout.
+        clone_folder_name (str): The folder name where the repository will be cloned.
+        config_options_path (str): The path to the configuration options folder.
+        verbose (bool): If True, prints the commands being executed.
+
+    Raises:
+        SystemExit: If any command fails during execution.
     """
+
+    if (clone_folder_name != REF_CLONE_FOLDER or clone_folder_name != CMP_CLONE_FOLDER):
+        print("Invalid cloning folder name, only 'ref-config' and 'cmp-config' values allowed")
+        sys.exit()
+
     commands = [
         f"rm -rf {clone_folder_name}",
         f"git clone --filter=blob:none --no-checkout --depth 1 --single-branch --branch {branch_name} --sparse {repo_url} {clone_folder_name}",
@@ -35,7 +46,7 @@ def sparse_branch_checkout(
         "git checkout",
     ]
 
-    # Run the first 2 commands in current directory
+    # Run the first two commands in current directory
     for command in commands[0:2]:
         if verbose:
             print(command)
@@ -72,8 +83,13 @@ def sparse_branch_checkout(
 
 def cleanup_files(verbose: bool):
     """
-    rm -rf cmp-config
-    rm -rf ref-config
+    Cleanup temporary directories created during the process.
+
+    Args:
+        verbose (bool): If True, prints the commands being executed.
+
+    Raises:
+        SystemExit: If the cleanup command fails.
     """
     commands = [
         f"rm -rf {REF_CLONE_FOLDER} {CMP_CLONE_FOLDER}"
@@ -96,7 +112,22 @@ def cleanup_files(verbose: bool):
 
 
 def load_config_yaml_files(path: str):
+    """
+    Load YAML configuration files from the given path.
+
+    Args:
+        path (str): The directory path containing YAML files.
+
+    Returns:
+        dict: A dictionary containing configuration options for each file.
+
+    Raises:
+        SystemExit: If any error occurs while reading or parsing YAML files.
+    """
     files = glob.glob(f"{path}/*.yaml.in")
+    if not files:
+        raise FileNotFoundError(f"No configuration YAML files found in directory: {path}")
+    
     config_options = {}
 
     for file in files:
@@ -123,8 +154,17 @@ def load_config_yaml_files(path: str):
     return config_options
 
 
-# Gets the names of all the configuration option across all daemons
 def get_daemons_config_names(daemons, daemon_configs):
+    """
+    Get the names of all configuration options across all daemons.
+
+    Args:
+        daemons (set): A set of daemon names.
+        daemon_configs (dict): A dictionary containing daemon configurations.
+
+    Returns:
+        dict: A dictionary mapping daemon names to their configuration option names.
+    """
     daemons_config_names = defaultdict(list)
     for daemon in daemons:
         daemon_config_options = daemon_configs[daemon]["options"]
@@ -138,7 +178,17 @@ def get_daemons_config_names(daemons, daemon_configs):
 # Get the configuration options that has been modified, Returns a diction in the format:
 def get_shared_config_daemon(shared_config_names, ref_daemon_configs, cmp_daemon_configs):
     """
-    Returns a diction in the format:
+    Get the configuration options that have been modified.
+
+    Args:
+        shared_config_names (set): A set of shared configuration option names.
+        ref_daemon_configs (list): The reference daemon configurations.
+        cmp_daemon_configs (list): The comparing daemon configurations.
+
+    Returns:
+        dict: A dictionary containing modified configuration options.
+
+    Returns a dictionary in the format:
 
     "modified":{
             "<file-name-1>" :{
@@ -197,6 +247,12 @@ def get_shared_config_daemon(shared_config_names, ref_daemon_configs, cmp_daemon
 
 
 def diff_config():
+    """
+    Perform the configuration diff between reference and comparing versions.
+
+    Returns:
+        dict: A dictionary containing added, deleted, and modified configurations.
+    """
     new_config = defaultdict(list)
     deleted_config = defaultdict(list)
     modified_config = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
@@ -262,6 +318,15 @@ def diff_config():
 
 
 def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str, is_verbose: bool):
+    """
+    Perform a diff between two branches in the same repository.
+
+    Args:
+        ref_repo (str): The reference repository URL.
+        ref_branch (str): The reference branch name.
+        cmp_branch (str): The branch to compare against.
+        is_verbose (bool): If True, prints the commands being executed.
+    """
     if is_verbose:
         print(
             f"Running diff-branch with ref-repo: {ref_repo}, ref-branch: {ref_branch}, cmp-branch: {cmp_branch}"
@@ -277,6 +342,15 @@ def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str, is_verbose: boo
 
 
 def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str, is_verbose: bool):
+    """
+    Perform a diff between two tags in the same repository.
+
+    Args:
+        ref_repo (str): The reference repository URL.
+        ref_tag (str): The reference tag name.
+        cmp_tag (str): The tag to compare against.
+        is_verbose (bool): If True, prints the commands being executed.
+    """
     if is_verbose:
         print(
             f"Running diff-tag with ref-repo: {ref_repo}, ref-tag: {ref_tag}, cmp-tag: {cmp_tag}"
@@ -292,6 +366,16 @@ def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str, is_verbose: bool):
 
 
 def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str, is_verbose: bool):
+    """
+    Perform a diff between branches in different repositories.
+
+    Args:
+        ref_repo (str): The reference repository URL.
+        ref_branch (str): The reference branch name.
+        remote_repo (str): The remote repository URL.
+        cmp_branch (str): The branch to compare against.
+        is_verbose (bool): If True, prints the commands being executed.
+    """
     if is_verbose:
         print(
                 f"Running diff-branch-remote-repo with ref-repo: {ref_repo}, remote-repo: {remote_repo}, ref-branch: {ref_branch}, cmp-branch: {cmp_branch}"
