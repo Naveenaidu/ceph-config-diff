@@ -45,6 +45,7 @@ jobs:
             const path = require('path');
             const diffOutputPath = path.join('ceph', 'diff_result.json');
             const diffOutput = fs.readFileSync(diffOutputPath, 'utf8');
+            console.log(diffOutput);
             const diffJson = JSON.parse(diffOutput);
 
             // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
@@ -53,17 +54,17 @@ jobs:
                                 Object.keys(diffJson.deleted).length === 0 &&
                                 Object.keys(diffJson.modified).length === 0;
 
-            if (isEmptyDiff) {
-              console.log("No changes detected. Skipping comment creation.");
-            } else {
-              // Retrieve existing bot comments for the PR
-              const {data: comments} = await github.rest.issues.listComments({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber,
-              })
+            # if (isEmptyDiff) {
+            #   console.log("No changes detected. Skipping comment creation.");
+            # } else {
+            #   // Retrieve existing bot comments for the PR
+            #   const {data: comments} = await github.rest.issues.listComments({
+            #       owner: context.repo.owner,
+            #       repo: context.repo.repo,
+            #       issue_number: issueNumber,
+            #   })
               
-              console.log(data)
+              # console.log(data)
             
               # // Fetch all comments on the pull request
               # const comments = await github.paginate(github.rest.issues.listComments, {
@@ -97,4 +98,4 @@ jobs:
               #   });
               # }
               # core.setFailed("Configuration Changed Detected, Updated release docs if necessary");
-            }
+            # }
