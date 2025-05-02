@@ -7,6 +7,7 @@ on:
 
 # The following permissions are needed to write a comment to repo
 permissions:
+    issues: write
     contents: write
     pull-requests: write
 
@@ -33,17 +34,45 @@ jobs:
 
       - name: execute config diff tool
         id: diff_tool
-        run:   python3 main.py diff-branch-remote-repo --ref-repo https://github.com/ceph/ceph.git --ref-branch main --remote-repo https://github.com/Naveenaidu/ceph --cmp-branch wip-naveen-telemetry-show-labeled-perf-counters >> diff_result.json
+        run:   |
+          rm diff_result.json
+          python3 main.py diff-branch-remote-repo --ref-repo https://github.com/ceph/ceph.git --ref-branch main --remote-repo https://github.com/Naveenaidu/ceph --cmp-branch wip-naveen-telemetry-show-labeled-perf-counters >> diff_result.json
         working-directory: ceph
       
       - name: Post output as a comment
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const path = require('path');
             const diffOutputPath = path.join('ceph', 'diff_result.json');
             const diffOutput = fs.readFileSync(diffOutputPath, 'utf8');
-            console.log(diffOutput);
             const diffJson = JSON.parse(diffOutput);
+
+            console.log("0");
+            // Do not create comment if there are no configuration changes
+            const isEmptyDiff = Object.keys(diffJson.added).length === 0 &&
+                                Object.keys(diffJson.deleted).length === 0 &&
+                                Object.keys(diffJson.modified).length === 0;
+
+            console.log("1");
+            if (isEmptyDiff) {
+              console.log("No changes detected. Skipping comment creation.");
+            } else {
+              const commentBody = `### Config Diff Tool Output\n\`\`\`\n${diffOutput}\n\`\`\`\n\nThe above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
+              const { owner, repo } = context.repo;
+              const { number } = context.issue;
+
+              # number 12
+              console.log(owner, repo, number); 
+
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: '12',
+              });
+
+              console.log(comments);
+
+            }
+
