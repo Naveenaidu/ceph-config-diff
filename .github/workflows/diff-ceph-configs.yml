@@ -40,7 +40,7 @@ jobs:
         working-directory: ceph
       
       - name: Post output as a comment
-        uses: actions/github-script@v4
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
         with:
           script: |
             const fs = require('fs');
@@ -57,7 +57,7 @@ jobs:
 
             console.log("1");
             console.log(context.repo.owner, context.repo.repo, context.payload.pull_request.number);
-            const {data: comments} = await github.rest.issues.listComments({
+            const {data: comments} = github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
