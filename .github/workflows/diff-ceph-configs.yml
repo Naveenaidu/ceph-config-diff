@@ -59,11 +59,14 @@ jobs:
               const commentBody = `### Config Diff Tool Output\n\`\`\`\n${diffOutput}\n\`\`\`\n\nThe above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
               
               // Fetch all comments on the pull request
-              const { data: comments } = await github.rest.issues.listComments({
+              // Fetch all comments on the pull request
+              const comments = await github.paginate(github.rest.issues.listComments, {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
+                issue_number: ${{ steps.pr.outputs.result }},
               });
+
+              console.log(comments);
 
               // Search for an existing comment containing the config diff output string
               const existingComment = comments.find(comment =>
