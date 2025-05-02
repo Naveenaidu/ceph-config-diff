@@ -56,14 +56,21 @@ jobs:
             if (isEmptyDiff) {
               console.log("No changes detected. Skipping comment creation.");
             } else {
-              # const commentBody = `### Config Diff Tool Output\n\`\`\`\n${diffOutput}\n\`\`\`\n\nThe above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
+              // Retrieve existing bot comments for the PR
+              const {data: comments} = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+              })
               
-              // Fetch all comments on the pull request
-              const comments = await github.paginate(github.rest.issues.listComments, {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number
-              });
+              console.log(data)
+            
+              # // Fetch all comments on the pull request
+              # const comments = await github.paginate(github.rest.issues.listComments, {
+              #   owner: context.repo.owner,
+              #   repo: context.repo.repo,
+              #   issue_number: context.payload.pull_request.number
+              # });
 
               # console.log(comments);
 
