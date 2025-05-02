@@ -89,5 +89,5 @@ jobs:
                   body: commentBody
                 });
               }
-              core.setFailed("Configuration Changed Detected, Updated release docs if necessary")
+              core.setFailed("Configuration Changed Detected, Updated release docs if necessary");
             }
