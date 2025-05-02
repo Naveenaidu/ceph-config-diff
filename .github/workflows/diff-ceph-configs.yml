@@ -70,3 +70,21 @@ jobs:
 
             const existingComment = comments2.find(comment => comment.body.includes("commetn"));
             console.log(existingComment);
+
+            if (existingComment) {
+                // Update the existing comment
+                github.rest.issues.updateComment({
+                  comment_id: existingComment.id,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: "updated comment 5 yaay"
+                });
+              } else {
+                // Create a new comment
+                github.rest.issues.createComment({
+                  issue_number: context.payload.pull_request.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: "new comment created"
+                });
+              }
