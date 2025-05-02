@@ -34,8 +34,7 @@ def sparse_branch_checkout(
     Raises:
         SystemExit: If any command fails during execution.
     """
-
-    if (clone_folder_name != REF_CLONE_FOLDER or clone_folder_name != CMP_CLONE_FOLDER):
+    if clone_folder_name != REF_CLONE_FOLDER and clone_folder_name != CMP_CLONE_FOLDER:
         print("Invalid cloning folder name, only 'ref-config' and 'cmp-config' values allowed")
         sys.exit()
 
@@ -91,9 +90,7 @@ def cleanup_files(verbose: bool):
     Raises:
         SystemExit: If the cleanup command fails.
     """
-    commands = [
-        f"rm -rf {REF_CLONE_FOLDER} {CMP_CLONE_FOLDER}"
-    ]
+    commands = [f"rm -rf {REF_CLONE_FOLDER} {CMP_CLONE_FOLDER}"]
 
     for command in commands:
         if verbose:
@@ -127,7 +124,7 @@ def load_config_yaml_files(path: str):
     files = glob.glob(f"{path}/*.yaml.in")
     if not files:
         raise FileNotFoundError(f"No configuration YAML files found in directory: {path}")
-    
+
     config_options = {}
 
     for file in files:
@@ -331,12 +328,16 @@ def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str, is_verbose: boo
         print(
             f"Running diff-branch with ref-repo: {ref_repo}, ref-branch: {ref_branch}, cmp-branch: {cmp_branch}"
         )
-    sparse_branch_checkout(ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
-    sparse_branch_checkout(ref_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
+    sparse_branch_checkout(
+        ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
+    )
+    sparse_branch_checkout(
+        ref_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
+    )
 
     final_result = diff_config()
-    with open("diff_result.json", "w") as output_file:
-        json.dump(final_result, output_file, indent=4)
+    json.dump(final_result, sys.stdout, indent=4)
+    print()
 
     cleanup_files(verbose=is_verbose)
 
@@ -352,20 +353,24 @@ def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str, is_verbose: bool):
         is_verbose (bool): If True, prints the commands being executed.
     """
     if is_verbose:
-        print(
-            f"Running diff-tag with ref-repo: {ref_repo}, ref-tag: {ref_tag}, cmp-tag: {cmp_tag}"
-        )
-    sparse_branch_checkout(ref_repo, ref_tag, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
-    sparse_branch_checkout(ref_repo, cmp_tag, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
+        print(f"Running diff-tag with ref-repo: {ref_repo}, ref-tag: {ref_tag}, cmp-tag: {cmp_tag}")
+    sparse_branch_checkout(
+        ref_repo, ref_tag, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
+    )
+    sparse_branch_checkout(
+        ref_repo, cmp_tag, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
+    )
 
     final_result = diff_config()
-    with open("diff_result.json", "w") as output_file:
-        json.dump(final_result, output_file, indent=4)
+    json.dump(final_result, sys.stdout, indent=4)
+    print()
 
     cleanup_files(verbose=is_verbose)
 
 
-def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str, is_verbose: bool):
+def diff_branch_remote_repo(
+    ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str, is_verbose: bool
+):
     """
     Perform a diff between branches in different repositories.
 
@@ -378,14 +383,18 @@ def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cm
     """
     if is_verbose:
         print(
-                f"Running diff-branch-remote-repo with ref-repo: {ref_repo}, remote-repo: {remote_repo}, ref-branch: {ref_branch}, cmp-branch: {cmp_branch}"
+            f"Running diff-branch-remote-repo with ref-repo: {ref_repo}, remote-repo: {remote_repo}, ref-branch: {ref_branch}, cmp-branch: {cmp_branch}"
         )
-    sparse_branch_checkout(ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
-    sparse_branch_checkout(remote_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose)
+    sparse_branch_checkout(
+        ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
+    )
+    sparse_branch_checkout(
+        remote_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
+    )
 
     final_result = diff_config()
-    with open("diff_result.json", "w") as output_file:
-        json.dump(final_result, output_file, indent=4)
+    json.dump(final_result, sys.stdout, indent=4)
+    print()
 
     cleanup_files(verbose=is_verbose)
 
@@ -410,7 +419,7 @@ def main():
     )
     parser_diff_branch.add_argument(
         "--verbose",
-        action='store_true',
+        action="store_true",
         help="enable verbose mode, prints all commands being run",
     )
 
@@ -428,7 +437,7 @@ def main():
     )
     parser_diff_commit.add_argument(
         "--verbose",
-        action='store_true',
+        action="store_true",
         help="enable verbose mode, prints all commands being run",
     )
 
@@ -453,7 +462,7 @@ def main():
     )
     parser_diff_branch_remote_repo.add_argument(
         "--verbose",
-        action='store_true',
+        action="store_true",
         help="enable verbose mode, prints all commands being run",
     )
 
@@ -466,7 +475,9 @@ def main():
         diff_tags(args.ref_repo, args.ref_tag, args.cmp_tag, args.verbose)
 
     elif args.mode == "diff-branch-remote-repo":
-        diff_branch_remote_repo(args.ref_repo, args.ref_branch, args.remote_repo, args.cmp_branch, args.verbose)
+        diff_branch_remote_repo(
+            args.ref_repo, args.ref_branch, args.remote_repo, args.cmp_branch, args.verbose
+        )
 
     else:
         parser.print_help()
