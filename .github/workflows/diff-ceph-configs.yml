@@ -72,11 +72,3 @@ jobs:
               }
             )
             console.log(comment2);
-
-            # // Search for an existing comment containing the config diff output string
-            # const existingComment = comments2.find(comment =>
-            #     comment.body.includes("commetn")
-            # );
-
-            # console.log(existingComment);
-          
