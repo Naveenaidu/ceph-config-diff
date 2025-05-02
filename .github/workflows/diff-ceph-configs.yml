@@ -56,16 +56,10 @@ jobs:
                                 Object.keys(diffJson.modified).length === 0;
 
             console.log("1");
-            if (isEmptyDiff) {
-              console.log("No changes detected. Skipping comment creation.");
-            } else {
-              const commentBody = `### Config Diff Tool Output\n\`\`\`\n${diffOutput}\n\`\`\`\n\nThe above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
-              const {data: comments} = await github.rest.issues.listComments({
+            const {data: comments} = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.number,
             })
             console.log(data);
-
-            }
-
+          
