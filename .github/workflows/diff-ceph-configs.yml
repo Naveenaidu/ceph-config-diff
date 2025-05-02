@@ -57,13 +57,6 @@ jobs:
 
             console.log("1");
             console.log(context.repo.owner, context.repo.repo, context.payload.pull_request.number);
-            const {data: comments} = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              per_page: 100,
-            })
-            console.log(comments);
 
             const comments2 = await github.paginate(
               github.rest.issues.listComments, {
