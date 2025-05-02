@@ -75,6 +75,7 @@ jobs:
                 console.log(existingComment);
             
                 if (existingComment) {
+                    console.log("existing comment");
                     // Update the existing comment
                     github.rest.issues.updateComment({
                         comment_id: existingComment.id,
@@ -83,6 +84,7 @@ jobs:
                         body: commentBody
                     });
                 } else {
+                    console.log("new comment");
                     // Create a new comment
                     github.rest.issues.createComment({
                         issue_number: context.payload.pull_request.number,
