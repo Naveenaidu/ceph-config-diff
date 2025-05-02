@@ -40,7 +40,7 @@ jobs:
         working-directory: ceph
       
       - name: Post output as a comment
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        uses: actions/github-script@v6
         with:
           script: |
             const fs = require('fs');
@@ -71,7 +71,10 @@ jobs:
                 issue_number: context.payload.pull_request.number,
               }
             )
-            console.log(comments2);
+
+            for(const comment of comments2) {
+              console.log(comment);
+            }
 
             // Search for an existing comment containing the config diff output string
             const existingComment = comments2.find(comment =>
