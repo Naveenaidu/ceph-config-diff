@@ -48,20 +48,18 @@ jobs:
             const diffOutputPath = path.join('ceph', 'diff_result.json');
             const diffOutput = fs.readFileSync(diffOutputPath, 'utf8');
             const diffJson = JSON.parse(diffOutput);
-            
-            console.log("0");
+
+            // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
             // Do not create comment if there are no configuration changes
             const isEmptyDiff = Object.keys(diffJson.added).length === 0 &&
                 Object.keys(diffJson.deleted).length === 0 &&
                 Object.keys(diffJson.modified).length === 0;
+
             if (isEmptyDiff) {
                 console.log("No changes detected. Skipping comment creation.");
             } else {
                 const commentBody = `### Config Diff Tool Output\n\`\`\`\n${diffOutput}\n\`\`\`\n\nThe above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
-                console.log("1");
-                console.log(context.repo.owner, context.repo.repo, context.payload.pull_request.number);
-
-                const comments2 = await github.paginate(
+                const comments = await github.paginate(
                     github.rest.issues.listComments, {
                         owner: context.repo.owner,
                         repo: context.repo.repo,
@@ -69,13 +67,10 @@ jobs:
                         per_page: 100,
                     }
                 )
-                console.log(comments2);
-            
-                const existingComment = comments2.find(comment => comment.body.includes("### Config Diff Tool Output"));
-                console.log(existingComment);
+                const existingComment = comments.find(comment => comment.body.includes("### Config Diff Tool Output"));
             
                 if (existingComment) {
-                    console.log("existing comment");
+                    console.log("Updating the existing config diff comment");
                     // Update the existing comment
                     github.rest.issues.updateComment({
                         comment_id: existingComment.id,
@@ -84,7 +79,7 @@ jobs:
                         body: commentBody
                     });
                 } else {
-                    console.log("new comment");
+                    console.log("Creating a new config diff comment");
                     // Create a new comment
                     github.rest.issues.createComment({
                         issue_number: context.payload.pull_request.number,
@@ -93,4 +88,7 @@ jobs:
                         body: commentBody
                     });
                 }
+
+                // Set the status as FAILED, if any configutation changes are detected
+                core.setFailed("Configuration Changed Detected, Updated release docs if necessary");
             }
