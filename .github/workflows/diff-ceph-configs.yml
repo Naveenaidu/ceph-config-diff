@@ -90,6 +90,6 @@ jobs:
                 }
 
                 // Set the status as FAILED, if any configutation changes are detected
-                console.log("Configuration changes detected: ", JSON.stringify(data));
+                console.log("Configuration changes detected: ", JSON.stringify(diffJson));
                 core.setFailed("Configuration Changed Detected, Updated release docs if necessary");
             }
