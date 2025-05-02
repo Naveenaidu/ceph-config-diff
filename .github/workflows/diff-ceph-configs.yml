@@ -61,7 +61,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              per_page: 100,
             })
             console.log(comments);
 
