@@ -48,43 +48,47 @@ jobs:
             const diffOutputPath = path.join('ceph', 'diff_result.json');
             const diffOutput = fs.readFileSync(diffOutputPath, 'utf8');
             const diffJson = JSON.parse(diffOutput);
-
+            
             console.log("0");
             // Do not create comment if there are no configuration changes
             const isEmptyDiff = Object.keys(diffJson.added).length === 0 &&
-                                Object.keys(diffJson.deleted).length === 0 &&
-                                Object.keys(diffJson.modified).length === 0;
+                Object.keys(diffJson.deleted).length === 0 &&
+                Object.keys(diffJson.modified).length === 0;
+            if (isEmptyDiff) {
+                console.log("No changes detected. Skipping comment creation.");
+            } else {
+                const commentBody = `### Config Diff Tool Output\n\`\`\`\n${diffOutput}\n\`\`\`\n\nThe above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
+                console.log("1");
+                console.log(context.repo.owner, context.repo.repo, context.payload.pull_request.number);
 
-            console.log("1");
-            console.log(context.repo.owner, context.repo.repo, context.payload.pull_request.number);
-
-            const comments2 = await github.paginate(
-              github.rest.issues.listComments, {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                per_page: 100,
-              }
-            )
-            console.log(comments2);
-
-            const existingComment = comments2.find(comment => comment.body.includes("commetn"));
-            console.log(existingComment);
-
-            if (existingComment) {
-                // Update the existing comment
-                github.rest.issues.updateComment({
-                  comment_id: existingComment.id,
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  body: "updated comment 5 yaay"
-                });
-              } else {
-                // Create a new comment
-                github.rest.issues.createComment({
-                  issue_number: context.payload.pull_request.number,
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  body: "new comment created"
-                });
-              }
+                const comments2 = await github.paginate(
+                    github.rest.issues.listComments, {
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: context.payload.pull_request.number,
+                        per_page: 100,
+                    }
+                )
+                console.log(comments2);
+            
+                const existingComment = comments2.find(comment => comment.body.includes("commetn"));
+                console.log(existingComment);
+            
+                if (existingComment) {
+                    // Update the existing comment
+                    github.rest.issues.updateComment({
+                        comment_id: existingComment.id,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: "updated comment 5 yaay"
+                    });
+                } else {
+                    // Create a new comment
+                    github.rest.issues.createComment({
+                        issue_number: context.payload.pull_request.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: "new comment created"
+                    });
+                }
+            }
