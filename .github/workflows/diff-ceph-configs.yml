@@ -1,9 +1,11 @@
 name: Check if any ceph configuration has been changed
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
-    branches:
-      - main
+    types:
+      - opened
+      - synchronize
+      - edited
+      - reopened
 
 # The following permissions are needed to write a comment to repo
 permissions:
@@ -25,7 +27,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13' 
+          python-version: '3.13'
 
       - name: Install python packages
         run: |
@@ -34,13 +36,13 @@ jobs:
 
       - name: execute config diff tool
         id: diff_tool
-        run:   |
-          rm diff_result.json
+        run:  |
+          rm -f diff_result.json
           python3 main.py diff-branch-remote-repo --ref-repo https://github.com/ceph/ceph.git --ref-branch main --remote-repo https://github.com/Naveenaidu/ceph --cmp-branch wip-naveen-telemetry-show-labeled-perf-counters >> diff_result.json
         working-directory: ceph
-      
+
       - name: Post output as a comment
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
         with:
           script: |
             const fs = require('fs');
@@ -68,26 +70,25 @@ jobs:
                     }
                 )
                 const existingComment = comments.find(comment => comment.body.includes("### Config Diff Tool Output"));
-            
+
                 if (existingComment) {
-                    console.log("A config diff comment already exists, updating it...");
+                    console.log("A config diff comment already exists, deleting it...");
                     // Update the existing comment
-                    github.rest.issues.updateComment({
+                    github.rest.issues.deleteComment({
                         comment_id: existingComment.id,
                         owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        body: commentBody
-                    });
-                } else {
-                    console.log("Creating a new config diff comment...");
-                    // Create a new comment
-                    github.rest.issues.createComment({
-                        issue_number: context.payload.pull_request.number,
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        body: commentBody
+                        repo: context.repo.repo
                     });
                 }
+
+                console.log("Creating a new config diff comment...");
+                // Create a new comment
+                github.rest.issues.createComment({
+                    issue_number: context.payload.pull_request.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: commentBody
+                });
 
                 // Set the status as FAILED, if any configutation changes are detected
                 console.log("Configuration changes detected: ", JSON.stringify(diffJson));
