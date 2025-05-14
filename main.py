@@ -2,119 +2,58 @@
 
 import yaml
 import argparse
-import subprocess
-import glob
-import os
 import sys
 import json
 import re
+
+from git import Repo
+import tempfile
+from pathlib import Path
 
 from collections import defaultdict
 
 # Constants for Ceph repository and folder paths
 CEPH_UPSTREAM_REMOTE_URL = "https://github.com/ceph/ceph.git"
 CEPH_CONFIG_OPTIONS_FOLDER_PATH = "src/common/options"
-REF_CLONE_FOLDER = "ref-config"
-CMP_CLONE_FOLDER = "cmp-config"
 
 
-def sparse_branch_checkout(
-    repo_url: str, branch_name: str, clone_folder_name: str, config_options_path: str, verbose: bool
-):
+def sparse_branch_checkout(repo_url: str, branch_name: str) -> tempfile.TemporaryDirectory[str]:
     """
     Clone a sparse branch and checkout the required folder.
 
     Args:
         repo_url (str): The repository URL to clone.
         branch_name (str): The branch name to checkout.
-        clone_folder_name (str): The folder name where the repository will be cloned.
-        config_options_path (str): The path to the configuration options folder.
-        verbose (bool): If True, prints the commands being executed.
-
-    Raises:
-        SystemExit: If any command fails during execution.
     """
 
-    if clone_folder_name != REF_CLONE_FOLDER and clone_folder_name != CMP_CLONE_FOLDER:
-        print("Invalid cloning folder name, only 'ref-config' and 'cmp-config' values allowed")
-        sys.exit()
+    config_tmp_dir = tempfile.TemporaryDirectory()
+    branch_name_str = "--branch=" + branch_name
+    repo = Repo.clone_from(
+        url=repo_url,
+        to_path=config_tmp_dir.name,
+        multi_options=[
+            "--sparse",
+            "--single-branch",
+            branch_name_str,
+            "--filter=blob:none",
+            "--no-checkout",
+            "--depth=1",
+        ],
+    )
+    git_cmd = repo.git
+    git_cmd.sparse_checkout("add", CEPH_CONFIG_OPTIONS_FOLDER_PATH)
+    git_cmd.checkout()
+    repo.close()
 
-    commands = [
-        f"rm -rf {clone_folder_name}",
-        f"git clone --filter=blob:none --no-checkout --depth 1 --single-branch --branch {branch_name} --sparse {repo_url} {clone_folder_name}",
-        f"git sparse-checkout add {config_options_path}",
-        "git checkout",
-    ]
-
-    # Run the first two commands in current directory
-    for command in commands[0:2]:
-        if verbose:
-            print(command)
-        result = subprocess.run(
-            command,
-            shell=True,
-            check=True,
-            text=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
-        )
-        if result.returncode != 0:
-            print(f"Command failed: {command}")
-            sys.exit(result.returncode)
-
-    # Run the sparse checkout in cloned directory
-    # This is necessary, because we need to use "cwd" to cd into cloned repository
-    for command in commands[2:]:
-        if verbose:
-            print(command)
-        result = subprocess.run(
-            command,
-            shell=True,
-            check=True,
-            text=True,
-            cwd=clone_folder_name,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
-        )
-        if result.returncode != 0:
-            print(f"Command failed: {command}")
-            sys.exit(result.returncode)
+    return config_tmp_dir
 
 
-def cleanup_files(verbose: bool):
-    """
-    Cleanup temporary directories created during the process.
-
-    Args:
-        verbose (bool): If True, prints the commands being executed.
-
-    Raises:
-        SystemExit: If the cleanup command fails.
-    """
-    commands = [f"rm -rf {REF_CLONE_FOLDER} {CMP_CLONE_FOLDER}"]
-
-    for command in commands:
-        if verbose:
-            print(command)
-        result = subprocess.run(
-            command,
-            shell=True,
-            check=True,
-            text=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
-        )
-        if result.returncode != 0:
-            print(f"Command failed: {command}")
-            sys.exit(result.returncode)
-
-
-def load_config_yaml_files(path: str):
+def load_config_yaml_files(path: Path):
     """
     Load YAML configuration files from the given path.
 
     Args:
-        path (str): The directory path containing YAML files.
+        path (Path): The directory path where the repository is stored.
 
     Returns:
         dict: A dictionary containing configuration options for each file.
@@ -122,32 +61,27 @@ def load_config_yaml_files(path: str):
     Raises:
         SystemExit: If any error occurs while reading or parsing YAML files.
     """
-    files = glob.glob(f"{path}/*.yaml.in")
-    if not files:
+    config_paths = list(path.joinpath("src", "common", "options").glob("*.yaml.in"))
+
+    if not config_paths:
         raise FileNotFoundError(f"No configuration YAML files found in directory: {path}")
 
     config_options = {}
 
-    for file in files:
-        with open(file, "r") as stream:
-            try:
+    for path in config_paths:
+        try:
+            # Preprocess the file to enclose template value in double quotes
+            # eg: @CEPH_INSTALL_FULL_PKGLIBDIR@/erasure-code -> "@CEPH_INSTALL_FULL_PKGLIBDIR@/erasure-code"
+            # This pre-process is okay since these values are dependent on
+            # the build system and as such cannot be found out until the
+            # entire ceph is built - which is a cumbersome process
 
-                # Preprocess the file to enclose template value in double quotes
-                # eg: @CEPH_INSTALL_FULL_PKGLIBDIR@/erasure-code -> "@CEPH_INSTALL_FULL_PKGLIBDIR@/erasure-code"
-                # This pre-process is okay since these values are dependent on
-                # the build system and as such cannot be found out until the
-                # entire ceph is built - which is a cumbersome process
-
-                file_content = stream.read()
-                # Enclose @key@somemoretext in double quotes "@key@somemoretext"
-                file_content = re.sub(r"@.*@.*", r'"\g<0>"', file_content)
-
-                file_name = os.path.basename(file)
-                file_config_options = yaml.safe_load(file_content)
-                config_options[file_name] = file_config_options
-
-            except yaml.YAMLError as excep:
-                print(excep)
+            file_content = path.read_text()
+            # Enclose @key@somemoretext in double quotes "@key@somemoretext"
+            file_content = re.sub(r"@.*@.*", r'"\g<0>"', file_content)
+            config_options[path.name] = yaml.safe_load(file_content)
+        except yaml.YAMLError as excep:
+            print(excep)
 
     return config_options
 
@@ -244,7 +178,7 @@ def get_shared_config_daemon(shared_config_names, ref_daemon_configs, cmp_daemon
     return modified_config
 
 
-def diff_config():
+def diff_config(ref_repo_path: Path, cmp_repo_path: Path):
     """
     Perform the configuration diff between reference and comparing versions.
 
@@ -256,13 +190,11 @@ def diff_config():
     modified_config = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
     # Get the configurations options present for all daemons in the "reference" version
-    ref_config_dict = load_config_yaml_files(
-        f"{REF_CLONE_FOLDER}/{CEPH_CONFIG_OPTIONS_FOLDER_PATH}"
-    )
+    ref_config_dict = load_config_yaml_files(ref_repo_path)
     ref_file_names = set(ref_config_dict.keys())
 
     # Get the configurations options present for all daemons in the "comparing" version
-    config_dict = load_config_yaml_files(f"{CMP_CLONE_FOLDER}/{CEPH_CONFIG_OPTIONS_FOLDER_PATH}")
+    config_dict = load_config_yaml_files(cmp_repo_path)
     cmp_file_names = set(config_dict.keys())
 
     # Case 1: A deamon is present in "reference" version but has been deleted
@@ -315,7 +247,7 @@ def diff_config():
     return final_result
 
 
-def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str, is_verbose: bool):
+def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str):
     """
     Perform a diff between two branches in the same repository.
 
@@ -323,27 +255,19 @@ def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str, is_verbose: boo
         ref_repo (str): The reference repository URL.
         ref_branch (str): The reference branch name.
         cmp_branch (str): The branch to compare against.
-        is_verbose (bool): If True, prints the commands being executed.
     """
-    if is_verbose:
-        print(
-            f"Running diff-branch with ref-repo: {ref_repo}, ref-branch: {ref_branch}, cmp-branch: {cmp_branch}"
-        )
-    sparse_branch_checkout(
-        ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
-    )
-    sparse_branch_checkout(
-        ref_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
-    )
+    ref_repo_tmp_dir = sparse_branch_checkout(ref_repo, ref_branch)
+    cmp_repo_tmp_dir = sparse_branch_checkout(ref_repo, cmp_branch)
 
-    final_result = diff_config()
+    final_result = diff_config(Path(ref_repo_tmp_dir.name), Path(cmp_repo_tmp_dir.name))
     json.dump(final_result, sys.stdout, indent=4)
     print()
 
-    cleanup_files(verbose=is_verbose)
+    ref_repo_tmp_dir.cleanup()
+    cmp_repo_tmp_dir.cleanup()
 
 
-def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str, is_verbose: bool):
+def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str):
     """
     Perform a diff between two tags in the same repository.
 
@@ -351,27 +275,20 @@ def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str, is_verbose: bool):
         ref_repo (str): The reference repository URL.
         ref_tag (str): The reference tag name.
         cmp_tag (str): The tag to compare against.
-        is_verbose (bool): If True, prints the commands being executed.
     """
-    if is_verbose:
-        print(f"Running diff-tag with ref-repo: {ref_repo}, ref-tag: {ref_tag}, cmp-tag: {cmp_tag}")
-    sparse_branch_checkout(
-        ref_repo, ref_tag, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
-    )
-    sparse_branch_checkout(
-        ref_repo, cmp_tag, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
-    )
 
-    final_result = diff_config()
+    ref_repo_tmp_dir = sparse_branch_checkout(ref_repo, ref_tag)
+    cmp_repo_tmp_dir = sparse_branch_checkout(ref_repo, cmp_tag)
+
+    final_result = diff_config(Path(ref_repo_tmp_dir.name), Path(cmp_repo_tmp_dir.name))
     json.dump(final_result, sys.stdout, indent=4)
     print()
 
-    cleanup_files(verbose=is_verbose)
+    ref_repo_tmp_dir.cleanup()
+    cmp_repo_tmp_dir.cleanup()
 
 
-def diff_branch_remote_repo(
-    ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str, is_verbose: bool
-):
+def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str):
     """
     Perform a diff between branches in different repositories.
 
@@ -380,24 +297,16 @@ def diff_branch_remote_repo(
         ref_branch (str): The reference branch name.
         remote_repo (str): The remote repository URL.
         cmp_branch (str): The branch to compare against.
-        is_verbose (bool): If True, prints the commands being executed.
     """
-    if is_verbose:
-        print(
-            f"Running diff-branch-remote-repo with ref-repo: {ref_repo}, remote-repo: {remote_repo}, ref-branch: {ref_branch}, cmp-branch: {cmp_branch}"
-        )
-    sparse_branch_checkout(
-        ref_repo, ref_branch, REF_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
-    )
-    sparse_branch_checkout(
-        remote_repo, cmp_branch, CMP_CLONE_FOLDER, CEPH_CONFIG_OPTIONS_FOLDER_PATH, is_verbose
-    )
+    ref_repo_tmp_dir = sparse_branch_checkout(ref_repo, ref_branch)
+    cmp_repo_tmp_dir = sparse_branch_checkout(remote_repo, cmp_branch)
 
-    final_result = diff_config()
+    final_result = diff_config(Path(ref_repo_tmp_dir.name), Path(cmp_repo_tmp_dir.name))
     json.dump(final_result, sys.stdout, indent=4)
     print()
 
-    cleanup_files(verbose=is_verbose)
+    ref_repo_tmp_dir.cleanup()
+    cmp_repo_tmp_dir.cleanup()
 
 
 def main():
@@ -418,11 +327,6 @@ def main():
     parser_diff_branch.add_argument(
         "--cmp-branch", required=True, help="the branch to compare against reference"
     )
-    parser_diff_branch.add_argument(
-        "--verbose",
-        action="store_true",
-        help="enable verbose mode, prints all commands being run",
-    )
 
     # diff-tag mode
     parser_diff_commit = subparsers.add_parser("diff-tag", help="diff between tags")
@@ -435,11 +339,6 @@ def main():
     parser_diff_commit.add_argument("--ref-tag", required=True, help="the reference tag version")
     parser_diff_commit.add_argument(
         "--cmp-tag", required=True, help="the tag version to compare against reference"
-    )
-    parser_diff_commit.add_argument(
-        "--verbose",
-        action="store_true",
-        help="enable verbose mode, prints all commands being run",
     )
 
     # diff-branch-remote-repo mode
@@ -461,25 +360,18 @@ def main():
     parser_diff_branch_remote_repo.add_argument(
         "--cmp-branch", required=True, help="the branch to compare against"
     )
-    parser_diff_branch_remote_repo.add_argument(
-        "--verbose",
-        action="store_true",
-        help="enable verbose mode, prints all commands being run",
-    )
 
     args = parser.parse_args()
 
     if args.mode == "diff-branch":
-        diff_branch(args.ref_repo, args.ref_branch, args.cmp_branch, args.verbose)
+        diff_branch(args.ref_repo, args.ref_branch, args.cmp_branch)
 
     elif args.mode == "diff-tag":
-        diff_tags(args.ref_repo, args.ref_tag, args.cmp_tag, args.verbose)
+        diff_tags(args.ref_repo, args.ref_tag, args.cmp_tag)
 
     elif args.mode == "diff-branch-remote-repo":
         diff_branch_remote_repo(
-            args.ref_repo, args.ref_branch, args.remote_repo, args.cmp_branch, args.verbose
-        )
-
+            args.ref_repo, args.ref_branch, args.remote_repo, args.cmp_branch)
     else:
         parser.print_help()
 
