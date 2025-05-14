@@ -86,6 +86,37 @@ def load_config_yaml_files(path: Path):
     return config_options
 
 
+def print_diff_posix_format(diff_result: dict):
+    """
+    Print the configuration differences in a POSIX diff-like format.
+
+    Args:
+        diff_result (dict): A dictionary containing added, deleted, and modified configurations.
+    """
+
+    # Handle added configurations
+    for daemon, added_configs in diff_result.get("added", {}).items():
+        print(f"+++ {daemon} (added)")
+        for config in added_configs:
+            print(f"+ {config}")
+
+    # Handle deleted configurations
+    for daemon, deleted_configs in diff_result.get("deleted", {}).items():
+        print(f"--- {daemon} (deleted)")
+        for config in deleted_configs:
+            print(f"- {config}")
+
+    # Handle modified configurations
+    for daemon, modified_configs in diff_result.get("modified", {}).items():
+        print(f"*** {daemon} (modified)")
+        for config, changes in modified_configs.items():
+            print(f"! {config}")
+            for key, change in changes.items():
+                before = change.get("before", "")
+                after = change.get("after", "")
+                print(f"  - {key}: {before}")
+                print(f"  + {key}: {after}")
+
 def get_daemons_config_names(daemons, daemon_configs):
     """
     Get the names of all configuration options across all daemons.
@@ -247,7 +278,7 @@ def diff_config(ref_repo_path: Path, cmp_repo_path: Path):
     return final_result
 
 
-def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str):
+def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str, is_posix_diff: bool):
     """
     Perform a diff between two branches in the same repository.
 
@@ -260,14 +291,19 @@ def diff_branch(ref_repo: str, ref_branch: str, cmp_branch: str):
     cmp_repo_tmp_dir = sparse_branch_checkout(ref_repo, cmp_branch)
 
     final_result = diff_config(Path(ref_repo_tmp_dir.name), Path(cmp_repo_tmp_dir.name))
-    json.dump(final_result, sys.stdout, indent=4)
-    print()
+
+    if is_posix_diff:
+        # Print the diff in POSIX format
+        print_diff_posix_format(final_result)
+    else:
+        json.dump(final_result, sys.stdout, indent=4)
+        print()
 
     ref_repo_tmp_dir.cleanup()
     cmp_repo_tmp_dir.cleanup()
 
 
-def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str):
+def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str, is_posix_diff: bool):
     """
     Perform a diff between two tags in the same repository.
 
@@ -281,14 +317,19 @@ def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str):
     cmp_repo_tmp_dir = sparse_branch_checkout(ref_repo, cmp_tag)
 
     final_result = diff_config(Path(ref_repo_tmp_dir.name), Path(cmp_repo_tmp_dir.name))
-    json.dump(final_result, sys.stdout, indent=4)
-    print()
+
+    if is_posix_diff:
+        # Print the diff in POSIX format
+        print_diff_posix_format(final_result)
+    else:
+        json.dump(final_result, sys.stdout, indent=4)
+        print()
 
     ref_repo_tmp_dir.cleanup()
     cmp_repo_tmp_dir.cleanup()
 
 
-def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str):
+def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str, is_posix_diff: bool):
     """
     Perform a diff between branches in different repositories.
 
@@ -302,8 +343,13 @@ def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cm
     cmp_repo_tmp_dir = sparse_branch_checkout(remote_repo, cmp_branch)
 
     final_result = diff_config(Path(ref_repo_tmp_dir.name), Path(cmp_repo_tmp_dir.name))
-    json.dump(final_result, sys.stdout, indent=4)
-    print()
+
+    if is_posix_diff:
+        # Print the diff in POSIX format
+        print_diff_posix_format(final_result)
+    else:
+        json.dump(final_result, sys.stdout, indent=4)
+        print()
 
     ref_repo_tmp_dir.cleanup()
     cmp_repo_tmp_dir.cleanup()
@@ -327,18 +373,28 @@ def main():
     parser_diff_branch.add_argument(
         "--cmp-branch", required=True, help="the branch to compare against reference"
     )
+    parser_diff_branch.add_argument(
+        "--posix-diff",
+        action="store_true",
+        help="output the configuration diff in POSIX diff like format",
+    )
 
     # diff-tag mode
-    parser_diff_commit = subparsers.add_parser("diff-tag", help="diff between tags")
-    parser_diff_commit.add_argument(
+    parser_diff_tag = subparsers.add_parser("diff-tag", help="diff between tags")
+    parser_diff_tag.add_argument(
         "--ref-repo",
         nargs="?",
         default=CEPH_UPSTREAM_REMOTE_URL,
         help="the repository URL from where the reference config files will be fetched",
     )
-    parser_diff_commit.add_argument("--ref-tag", required=True, help="the reference tag version")
-    parser_diff_commit.add_argument(
+    parser_diff_tag.add_argument("--ref-tag", required=True, help="the reference tag version")
+    parser_diff_tag.add_argument(
         "--cmp-tag", required=True, help="the tag version to compare against reference"
+    )
+    parser_diff_tag.add_argument(
+        "--posix-diff",
+        action="store_true",
+        help="output the configuration diff in POSIX diff like format",
     )
 
     # diff-branch-remote-repo mode
@@ -360,18 +416,23 @@ def main():
     parser_diff_branch_remote_repo.add_argument(
         "--cmp-branch", required=True, help="the branch to compare against"
     )
+    parser_diff_branch_remote_repo.add_argument(
+        "--posix-diff",
+        action="store_true",
+        help="output the configuration diff in POSIX diff like format",
+    )
 
     args = parser.parse_args()
 
     if args.mode == "diff-branch":
-        diff_branch(args.ref_repo, args.ref_branch, args.cmp_branch)
+        diff_branch(args.ref_repo, args.ref_branch, args.cmp_branch, args.posix_diff)
 
     elif args.mode == "diff-tag":
-        diff_tags(args.ref_repo, args.ref_tag, args.cmp_tag)
+        diff_tags(args.ref_repo, args.ref_tag, args.cmp_tag, args.posix_diff)
 
     elif args.mode == "diff-branch-remote-repo":
         diff_branch_remote_repo(
-            args.ref_repo, args.ref_branch, args.remote_repo, args.cmp_branch)
+            args.ref_repo, args.ref_branch, args.remote_repo, args.cmp_branch, args.posix_diff)
     else:
         parser.print_help()
 
