@@ -34,6 +34,7 @@ def sparse_branch_checkout(
     Raises:
         SystemExit: If any command fails during execution.
     """
+
     if clone_folder_name != REF_CLONE_FOLDER and clone_folder_name != CMP_CLONE_FOLDER:
         print("Invalid cloning folder name, only 'ref-config' and 'cmp-config' values allowed")
         sys.exit()
