@@ -96,19 +96,19 @@ def print_diff_posix_format(diff_result: dict):
 
     # Handle added configurations
     for daemon, added_configs in diff_result.get("added", {}).items():
-        print(f"+++ {daemon} (added)")
+        print(f"+++ {daemon} (added) +++")
         for config in added_configs:
             print(f"+ {config}")
 
     # Handle deleted configurations
     for daemon, deleted_configs in diff_result.get("deleted", {}).items():
-        print(f"--- {daemon} (deleted)")
+        print(f"--- {daemon} (deleted) ---")
         for config in deleted_configs:
             print(f"- {config}")
 
     # Handle modified configurations
     for daemon, modified_configs in diff_result.get("modified", {}).items():
-        print(f"*** {daemon} (modified)")
+        print(f"!!! {daemon} (modified) !!!")
         for config, changes in modified_configs.items():
             print(f"! {config}")
             for key, change in changes.items():
