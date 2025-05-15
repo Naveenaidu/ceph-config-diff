@@ -59,7 +59,7 @@ module.exports = async ({ github, context, core, diffJson }) => {
         });
     
         // Set the status as FAILED if any configuration changes are detected
-        console.log("Configuration changes detected: ", diffOutput);
+        console.log("Configuration changes detected: ",  JSON.stringify(diffJson));
         core.setFailed("Configuration Changes Detected, Update release documents - if necessary");
       } catch (error) {
         core.setFailed(error.message);
