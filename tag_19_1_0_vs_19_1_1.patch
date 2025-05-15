@@ -1,0 +1,49 @@
++++ global.yaml.in (added)
++ mgr_op_history_duration
++ qat_compressor_busy_polling
++ mgr_op_history_slow_op_size
++ mgr_op_history_slow_op_threshold
++ mgr_op_history_size
++ mgr_enable_op_tracker
++ mgr_op_complaint_time
++ mgr_num_op_tracker_shard
++ mgr_op_log_threshold
++++ mds.yaml.in (added)
++ mds_kill_after_journal_logs_flushed
++++ mds-client.yaml.in (added)
++ client_debug_inject_features
++++ mon.yaml.in (added)
++ mon_fsmap_prune_threshold
++++ crimson.yaml.in (added)
++ seastore_max_data_allocation_size
++ crimson_osd_stat_interval
++ seastore_full_integrity_check
++ crimson_seastar_num_threads
+--- mds.yaml.in (deleted)
+- mds_kill_skip_replaying_inotable
+*** rgw.yaml.in (modified)
+! rgw_log_object_name
+  - fmt_desc: The logging format for an object name. See ma npage :manpage:`date` for details about format specifiers.
+  + fmt_desc: The logging format for an object name. See man page :manpage:`date` for details about format specifiers.
+*** global.yaml.in (modified)
+! cluster_network_interface
+  - desc: Interface name(s) from which to choose an address from a cluster_network to bind to; cluster_network must also be specified.
+  + desc: Interface name(s) from which to choose an address from a ``cluster_network`` to bind to; ``cluster_network`` must also be specified.
+! bluestore_rocksdb_cfs
+  - fmt_desc: Definition of BlueStore's RocksDB sharding. The optimal value depends on multiple factors, and modification is invadvisable. This setting is used only when OSD is doing ``--mkfs``. Next runs of OSD retrieve sharding from disk.
+  + fmt_desc: Definition of BlueStore's RocksDB sharding. The optimal value depends on multiple factors, and modification is inadvisable. This setting is used only when OSD is doing ``--mkfs``. Next runs of OSD retrieve sharding from disk.
+! public_network_interface
+  - desc: Interface name(s) from which to choose an address from a public_network to bind to; public_network must also be specified.
+  + desc: Interface name(s) from which to choose an address from a ``public_network`` to bind to; ``public_network`` must also be specified.
+*** rbd.yaml.in (modified)
+! rbd_validate_pool
+  - level: advanced
+  + level: dev
+*** mds.yaml.in (modified)
+! mds_inject_skip_replaying_inotable
+  - fmt_desc: Ceph will skip replaying the inotable when replaying the journal, and the premary MDS will crash, while the replacing MDS won't. (for testing only).
+  + fmt_desc: MDS will skip replaying the inotable when replaying the journal logs. (for testing only).
+*** crimson.yaml.in (modified)
+! seastore_data_delta_based_overwrite
+  - desc: overwrite the existing data block based on delta if the original size is smaller than the value, otherwise do overwrite based on remapping, set to 0 to enforce the remap-based overwrite.
+  + desc: overwrite the existing data block based on delta if the overwrite size is equal to or less than the value, otherwise do overwrite based on remapping, set to 0 to enforce the remap-based overwrite.
