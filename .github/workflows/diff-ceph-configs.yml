@@ -93,7 +93,7 @@ jobs:
             } else {
                 const commentBody = `### Config Diff Tool Output
                 \`\`\`\
-                ${DIFF_JSON_OUTPUT}
+                ${process.env.DIFF_JSON_OUTPUT}
                 \`\`\`\
                 
                 The above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
