@@ -42,7 +42,12 @@ jobs:
           REMOTE_REPO: "https://github.com/Naveenaidu/ceph"
           REMOTE_BRANCH: "wip-naveen-telemetry-show-labeled-perf-counters"
         run:  |
-          echo "diff_json=$(python3 main.py diff-branch-remote-repo --ref-repo $REF_REPO --ref-branch $REF_BRANCH --remote-repo $REMOTE_REPO --cmp-branch $REMOTE_BRANCH)" >> "$GITHUB_OUTPUT"
+          {
+              echo 'DIFF_JSON<<EOF'
+              python3 main.py diff-branch-remote-repo --ref-repo $REF_REPO --ref-branch $REF_BRANCH --remote-repo $REMOTE_REPO --cmp-branch $REMOTE_BRANCH
+              echo EOF
+          } >> "$GITHUB_OUTPUT"
+          # echo "diff_json=$(python3 main.py diff-branch-remote-repo --ref-repo $REF_REPO --ref-branch $REF_BRANCH --remote-repo $REMOTE_REPO --cmp-branch $REMOTE_BRANCH)" >> "$GITHUB_OUTPUT"
           echo $GITHUB_OUTPUT
         working-directory: ceph
 
@@ -50,7 +55,7 @@ jobs:
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
         with:
           script: |
-            const diffJson = JSON.parse(${{ steps.diff_tool.outputs.diff_json }});
+            const diffJson = JSON.parse(${{ steps.diff_tool.outputs.DIFF_JSON }});
 
             // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
             // Do not create comment if there are no configuration changes
