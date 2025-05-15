@@ -1,9 +1,5 @@
 module.exports = async ({ github, context, core, diffJson }) => {
     try {
-        // const diffJsonString = core.getMultilineInput('DIFF_JSON')
-        console.log(diffJson)
-        // const diffJson = JSON.parse(diff_json);
-    
         // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
         // Do not create comment if there are no configuration changes
         const isEmptyDiff = Object.keys(diffJson.added).length === 0 &&
