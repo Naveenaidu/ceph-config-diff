@@ -1,4 +1,2 @@
 GitPython==3.1.44
-GitPython==3.1.44
-PyYAML==6.0.1
 PyYAML==6.0.2
