@@ -17,12 +17,16 @@ module.exports = async ({ github, context, core, diffJson }) => {
     
         const diffOutput = JSON.stringify(diffJson, null, 2);
         const commentBody = `
-    ### Config Diff Tool Output
-    \`\`\`
-    ${diffOutput}
-    \`\`\`
-    
-    The above configuration changes are found in the PR. Please update the relevant release documentation if necessary.
+### Config Diff Tool Output
+
+\`\`\`json
+
+${diffOutput}
+
+\`\`\`
+  
+  
+The above configuration changes are found in the PR. Please update the relevant release documentation if necessary.
     `;
     
         const { owner, repo } = context.repo;
