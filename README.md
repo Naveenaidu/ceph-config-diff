@@ -1,5 +1,5 @@
 # ceph-config-diff
 tool to compare ceph configurations between different versions
 
-test 100
+test 100 1
  
