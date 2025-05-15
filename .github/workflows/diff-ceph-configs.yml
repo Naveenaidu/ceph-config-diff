@@ -42,8 +42,7 @@ jobs:
           REMOTE_REPO: "https://github.com/Naveenaidu/ceph"
           REMOTE_BRANCH: "wip-naveen-telemetry-show-labeled-perf-counters"
         run:  |
-          echo "diff_json=$(python3 main.py diff-branch-remote-repo --ref-repo $REF_REPO --ref-branch $REF_BRANCH --remote-repo $REMOTE_REPO --cmp-branch $REMOTE_BRANCH)" >> $GITHUB_OUTPUT
-          cat diff_json
+          echo "diff_json=$(python3 main.py diff-branch-remote-repo --ref-repo $REF_REPO --ref-branch $REF_BRANCH --remote-repo $REMOTE_REPO --cmp-branch $REMOTE_BRANCH)" >> "$GITHUB_OUTPUT"
           echo $GITHUB_OUTPUT
         working-directory: ceph
 
