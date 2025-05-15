@@ -1,6 +1,6 @@
 module.exports = async ({ github, context, core }) => {
     try {
-        const diffJsonString = "${{ steps.diff_tool.outputs.DIFF_JSON }}";
+        const diffJsonString = core.getInput('DIFF_JSON')
         const diffJson = JSON.parse(diffJsonString);
     
         // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
