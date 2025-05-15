@@ -57,7 +57,9 @@ jobs:
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
         with:
           script: |
+            console.log("----- HELLLLOOOOOOO 0 ---- ")
             const diffJson = JSON.parse(JSON.stringify(process.env.DIFF_JSON_OUTPUT))
+            console.log("----- HELLLLOOOOOOO ---- ")
             console.log(diffJson)
 
             // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
@@ -65,8 +67,10 @@ jobs:
             const isEmptyDiff = Object.keys(diffJson.added).length === 0 &&
                 Object.keys(diffJson.deleted).length === 0 &&
                 Object.keys(diffJson.modified).length === 0;
-
+            
+            console.log("----- HELLLLOOOOOOO 1 ---- ")
             if (isEmptyDiff) {
+                console.log("----- HELLLLOOOOOOO 2 ---- ")
                 console.log("No changes detected. Skipping comment creation.");
             } else {
                 const commentBody = `### Config Diff Tool Output
@@ -76,6 +80,7 @@ jobs:
                 
                 The above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
 
+                console.log("----- HELLLLOOOOOOO 3 ---- ")
                 const comments = await github.paginate(
                     github.rest.issues.listComments, {
                         owner: context.repo.owner,
@@ -84,8 +89,9 @@ jobs:
                         per_page: 100,
                     }
                 )
-                const existingComment = comments.find(comment => comment.body.includes("### Config Diff Tool Output"));
 
+                const existingComment = comments.find(comment => comment.body.includes("### Config Diff Tool Output"));
+                console.log("----- HELLLLOOOOOOO 4 ---- ")
                 if (existingComment) {
                     console.log("A config diff comment already exists, deleting it...");
                     // Update the existing comment
