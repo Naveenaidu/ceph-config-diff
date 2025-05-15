@@ -19,7 +19,7 @@ module.exports = async ({ github, context, core, diffJson }) => {
         const commentBody = `
     ### Config Diff Tool Output
     \`\`\`
-    ${diffJson}
+    ${diffOutput}
     \`\`\`
     
     The above configuration changes are found in the PR. Please update the relevant release documentation if necessary.
