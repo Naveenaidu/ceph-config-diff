@@ -52,10 +52,14 @@ jobs:
         working-directory: ceph
 
       - name: Post output as a comment
+        env:
+          DIFF_JSON_OUTPUT: ${{ steps.diff_tool.outputs.DIFF_JSON }}
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
         with:
           script: |
-            const diffJson = JSON.parse(${{ steps.diff_tool.outputs.DIFF_JSON }});
+            const diffJson = JSON.parse(JSON.stringify(${{ steps.diff_tool.outputs.DIFF_JSON }}))
+            console.log(diffJson)
+            # const diffJson = JSON.parse(${{ steps.diff_tool.outputs.DIFF_JSON }});
 
             // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
             // Do not create comment if there are no configuration changes
