@@ -93,7 +93,7 @@ jobs:
             } else {
                 const commentBody = `### Config Diff Tool Output
                 \`\`\`\
-                ${diffJson}
+                ${JSON.stringify(diffJson)}
                 \`\`\`\
                 
                 The above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
