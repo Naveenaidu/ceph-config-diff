@@ -57,7 +57,7 @@ jobs:
           script: |
 
             const diffJson = JSON.parse(process.env.DIFF_JSON_OUTPUT);
-            console.log(diffJSON)
+            console.log(diffJson)
             const postComment = require('./ceph/.github/workflows/config-diff-post-comment.js');
             postComment({ github, context, core, diffJson });
         env:
