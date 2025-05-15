@@ -59,6 +59,7 @@ jobs:
           script: |
             console.log("----- HELLLLOOOOOOO 0 ---- ")
             const diffJson = JSON.parse(JSON.stringify(process.env.DIFF_JSON_OUTPUT))
+            console.log(typeOf diffJson)
             console.log("----- HELLLLOOOOOOO ---- ")
 
             console.log("----- diffJson.added ---- ")
