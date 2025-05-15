@@ -92,12 +92,12 @@ jobs:
                 console.log("No changes detected. Skipping comment creation.");
             } else {
                 const commentBody = `### Config Diff Tool Output
-
-            \`\`\`\
+            
+            \`\`\`\json
             ${process.env.DIFF_JSON_OUTPUT}
             \`\`\`\
-                
-                The above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
+            
+            The above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
 
                 console.log("----- HELLLLOOOOOOO 3 ---- ")
                 const comments = await github.paginate(
