@@ -15,7 +15,7 @@ module.exports = async ({ github, context, core, diffJson }) => {
           return;
         }
     
-        // const diffOutput = JSON.stringify(diffJson, null, 2);
+        const diffOutput = JSON.stringify(diffJson, null, 2);
         const commentBody = `
     ### Config Diff Tool Output
     \`\`\`
@@ -59,7 +59,7 @@ module.exports = async ({ github, context, core, diffJson }) => {
         });
     
         // Set the status as FAILED if any configuration changes are detected
-        console.log("Configuration changes detected: ",  JSON.stringify(diffJson));
+        console.log("Configuration changes detected: ",  diffOutput);
         core.setFailed("Configuration Changes Detected, Update release documents - if necessary");
       } catch (error) {
         core.setFailed(error.message);
