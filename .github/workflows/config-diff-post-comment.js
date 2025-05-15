@@ -1,6 +1,7 @@
 module.exports = async ({ github, context, core }) => {
     try {
-        const diffJsonString = core.getInput('DIFF_JSON')
+        const diffJsonString = core.getMultilineInput('DIFF_JSON')
+        console.log(diffJsonString)
         const diffJson = JSON.parse(diffJsonString);
     
         // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
