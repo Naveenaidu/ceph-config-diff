@@ -51,11 +51,16 @@ jobs:
           echo $GITHUB_OUTPUT
         working-directory: ceph
       
+      - name: List contents of the current directory
+        run: |
+          pwd
+          ls -la
+    
       - name: Post output as a comment
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
         with:
           script: |
-            const postComment = require('./github/workflows/config-diff-post-comments.js');
+            const postComment = require('./.github/workflows/config-diff-post-comments.js');
             postComment({ github, context, core });
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
