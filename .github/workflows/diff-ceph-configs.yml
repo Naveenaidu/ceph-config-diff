@@ -60,7 +60,6 @@ jobs:
             console.log("----- HELLLLOOOOOOO 0 ---- ")
             const diffJson = JSON.parse(JSON.stringify(process.env.DIFF_JSON_OUTPUT))
             console.log("----- HELLLLOOOOOOO ---- ")
-            console.log(diffJson)
 
             // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
             // Do not create comment if there are no configuration changes
@@ -75,7 +74,7 @@ jobs:
             } else {
                 const commentBody = `### Config Diff Tool Output
                 \`\`\`\
-                ${diffOutput}
+                ${diffJson}
                 \`\`\`\
                 
                 The above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
