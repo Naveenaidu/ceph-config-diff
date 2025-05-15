@@ -1,8 +1,8 @@
-module.exports = async ({ github, context, core }) => {
+module.exports = async ({ github, context, core, diff_json }) => {
     try {
-        const diffJsonString = core.getMultilineInput('DIFF_JSON')
-        console.log(diffJsonString)
-        const diffJson = JSON.parse(diffJsonString);
+        // const diffJsonString = core.getMultilineInput('DIFF_JSON')
+        console.log(diff_json)
+        const diffJson = JSON.parse(diff_json);
     
         // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
         // Do not create comment if there are no configuration changes

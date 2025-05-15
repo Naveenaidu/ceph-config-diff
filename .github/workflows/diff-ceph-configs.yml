@@ -66,10 +66,10 @@ jobs:
         with:
           script: |
             const postComment = require('./ceph/.github/workflows/config-diff-post-comment.js');
-            postComment({ github, context, core });
+            postComment({ github, context, core, process.env.DIFF_JSON_OUTPUT });
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DIFF_JSON: ${{ steps.diff_tool.outputs.diff_json }}
+          DIFF_JSON_OUTPUT: ${{ steps.diff_tool.outputs.diff_json }}
 
       # - name: Post output as a comment
       #   env:
