@@ -36,20 +36,20 @@ jobs:
 
       - name: execute config diff tool
         id: diff_tool
+        env:
+          REF_REPO: "https://github.com/ceph/ceph.git"
+          REF_BRANCH: "main"
+          REMOTE_REPO: "https://github.com/Naveenaidu/ceph"
+          REMOTE_BRANCH: "wip-naveen-telemetry-show-labeled-perf-counters"
         run:  |
-          rm -f diff_result.json
-          python3 main.py diff-branch-remote-repo --ref-repo https://github.com/ceph/ceph.git --ref-branch main --remote-repo https://github.com/Naveenaidu/ceph --cmp-branch wip-naveen-telemetry-show-labeled-perf-counters >> diff_result.json
+          echo "diff_json=$(python3 main.py diff-branch-remote-repo --ref-repo $REF_REPO --ref-branch $REF_BRANCH --remote-repo $REMOTE_REPO --cmp-branch REMOTE_BRANCH)" >> $GITHUB_OUTPUT
         working-directory: ceph
 
       - name: Post output as a comment
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
         with:
           script: |
-            const fs = require('fs');
-            const path = require('path');
-            const diffOutputPath = path.join('ceph', 'diff_result.json');
-            const diffOutput = fs.readFileSync(diffOutputPath, 'utf8');
-            const diffJson = JSON.parse(diffOutput);
+            const diffJson = JSON.parse(${{ steps.diff_tool.outputs.diff_json }});
 
             // Check if the structure matches {"added": {}, "deleted": {}, "modified": {}}
             // Do not create comment if there are no configuration changes
@@ -60,7 +60,13 @@ jobs:
             if (isEmptyDiff) {
                 console.log("No changes detected. Skipping comment creation.");
             } else {
-                const commentBody = `### Config Diff Tool Output\n\`\`\`\n${diffOutput}\n\`\`\`\n\nThe above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
+                const commentBody = `### Config Diff Tool Output
+                \`\`\`\
+                ${diffOutput}
+                \`\`\`\
+                
+                The above configuration changes are found in the PR, please update the relevant release documentation if necessary.`;
+
                 const comments = await github.paginate(
                     github.rest.issues.listComments, {
                         owner: context.repo.owner,
