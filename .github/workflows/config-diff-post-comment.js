@@ -15,7 +15,7 @@ module.exports = async ({ github, context, core, configDiff }) => {
         const commentBody = `
 ### Config Diff Tool Output
 
-\`\`\`
+\`\`\`diff
 
 ${configDiff}
 
