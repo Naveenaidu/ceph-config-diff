@@ -44,10 +44,9 @@ jobs:
         run:  |
           {
               echo 'DIFF_JSON<<EOF'
-              python3 main.py diff-branch-remote-repo --ref-repo $REF_REPO --ref-branch $REF_BRANCH --remote-repo $REMOTE_REPO --cmp-branch $REMOTE_BRANCH
+              python3 main.py diff-branch-remote-repo --ref-repo $REF_REPO --ref-branch $REF_BRANCH --remote-repo $REMOTE_REPO --cmp-branch $REMOTE_BRANCH --posix-diff
               echo EOF
           } >> "$GITHUB_OUTPUT"
-          # echo "diff_json=$(python3 main.py diff-branch-remote-repo --ref-repo $REF_REPO --ref-branch $REF_BRANCH --remote-repo $REMOTE_REPO --cmp-branch $REMOTE_BRANCH)" >> "$GITHUB_OUTPUT"
           echo $GITHUB_OUTPUT
         working-directory: ceph
     
@@ -55,9 +54,9 @@ jobs:
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
         with:
           script: |
-            const diffJson = JSON.parse(process.env.DIFF_JSON_OUTPUT);
+            const configDiff = process.env.DIFF_JSON_OUTPUT;
             const postComment = require('./ceph/.github/workflows/config-diff-post-comment.js');
-            postComment({ github, context, core, diffJson });
+            postComment({ github, context, core, configDiff });
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DIFF_JSON_OUTPUT: ${{ steps.diff_tool.outputs.DIFF_JSON }}
