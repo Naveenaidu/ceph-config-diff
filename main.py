@@ -82,6 +82,7 @@ def load_config_yaml_files(path: Path):
             config_options[path.name] = yaml.safe_load(file_content)
         except yaml.YAMLError as excep:
             print(excep)
+            sys.exit(1)
 
     return config_options
 
@@ -326,7 +327,9 @@ def diff_tags(ref_repo: str, ref_tag: str, cmp_tag: str, is_posix_diff: bool):
     cmp_repo_tmp_dir.cleanup()
 
 
-def diff_branch_remote_repo(ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str, is_posix_diff: bool):
+def diff_branch_remote_repo(
+    ref_repo: str, ref_branch: str, remote_repo: str, cmp_branch: str, is_posix_diff: bool
+):
     """
     Perform a diff between branches in different repositories.
 
