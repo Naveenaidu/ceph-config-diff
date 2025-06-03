@@ -67,6 +67,7 @@ def sparse_branch_checkout_remote_repo_skip_clone(remote_repo, ref_sha) -> Repo:
     local_branches = [
         branch.strip().lstrip("*").strip() for branch in git_cmd.branch("--list", "-r").splitlines()
     ]
+
     branch_name = ref_sha.split(":")[1]
     branch_present = any(branch_name in branch for branch in local_branches)
     if not branch_present:
@@ -80,6 +81,7 @@ def sparse_branch_checkout_remote_repo_skip_clone(remote_repo, ref_sha) -> Repo:
     if not folder_exists_in_branch(branch_name, git_cmd, CEPH_CONFIG_OPTIONS_FOLDER_PATH):
         git_cmd.sparse_checkout("add", CEPH_CONFIG_OPTIONS_FOLDER_PATH)
         git_cmd.checkout()
+
     return repo
 
 
@@ -91,8 +93,8 @@ def sparse_branch_checkout_skip_clone(ref_sha) -> Repo:
     local_branches = [
         branch.strip().lstrip("*").strip() for branch in git_cmd.branch("--list").splitlines()
     ]
-    # branch_name = ref_sha.split(":")[0]
-    branch_name = ref_sha
+
+    branch_name = ref_sha.split(":")[0]
     branch_present = any(branch_name in branch for branch in local_branches)
     if not branch_present:
         git_cmd.fetch(
@@ -100,7 +102,7 @@ def sparse_branch_checkout_skip_clone(ref_sha) -> Repo:
             ref_sha,
             "--depth=1",
         )
- 
+
     if not folder_exists_in_branch(branch_name, git_cmd, CEPH_CONFIG_OPTIONS_FOLDER_PATH):
         git_cmd.sparse_checkout("add", CEPH_CONFIG_OPTIONS_FOLDER_PATH)
         git_cmd.checkout()
@@ -434,9 +436,10 @@ def diff_branch_remote_repo(
     """
     final_result = {}
     if skip_clone:
+        ref_sha = ref_branch + ":" + ref_branch
         cmp_sha_local_branch_name = REMOTE_REPO_GIT_REMOTE_NAME + "/" + cmp_branch
         cmp_sha = cmp_branch + ":" + cmp_sha_local_branch_name
-        ref_git_repo = sparse_branch_checkout_skip_clone(ref_branch)
+        ref_git_repo = sparse_branch_checkout_skip_clone(ref_sha)
         remote_git_repo = sparse_branch_checkout_remote_repo_skip_clone(remote_repo, cmp_sha)
         ref_config_dict = git_show_yaml_files(ref_branch, ref_git_repo)
 
